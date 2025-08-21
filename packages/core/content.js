@@ -1,0 +1,114 @@
+// packages/core/content.js
+// Default content & constants for the TD engine (data-driven)
+
+export const TILE = 32;
+export const GRID_W = 24;
+export const GRID_H = 16;
+export const START = { x: 0, y: 8 };
+export const END = { x: 23, y: 8 };
+
+export const Elt = { FIRE: 'FIRE', ICE: 'ICE', LIGHT: 'LIGHT', POISON: 'POISON' };
+export const Status = { BURN: 'BURN', CHILL: 'CHILL', SHOCK: 'SHOCK', POISON: 'POISON' };
+
+export const ELEMENTS = [
+  { key: 'FIRE', color: '#ef4444', type: 'splash', status: Status.BURN },
+  { key: 'ICE', color: '#38bdf8', type: 'bolt', status: Status.CHILL },
+  { key: 'LIGHT', color: '#a78bfa', type: 'chain', status: Status.SHOCK },
+  { key: 'POISON', color: '#22c55e', type: 'bolt', status: Status.POISON },
+];
+
+export const EltColor = Object.fromEntries(ELEMENTS.map(e => [e.key, e.color]));
+export const EltType = Object.fromEntries(ELEMENTS.map(e => [e.key, e.type]));
+export const EltStatus = Object.fromEntries(ELEMENTS.map(e => [e.key, e.status]));
+
+export const COST = { FIRE: 70, ICE: 70, LIGHT: 90, POISON: 75 };
+export const UPG_COST = (lvl) => 80 + lvl * 45;
+export const UNLOCK_TIERS = [2, 4, 6];
+//export const EVO_COST = tier => [120, 220, 400][tier] || 500;
+
+export const ResistProfiles = {
+  Grunt: { hp: 95, speed: 40, resist: { FIRE: 0.1, ICE: 0, LIGHT: 0, POISON: 0 }, gold: 8 },
+  Runner: { hp: 70, speed: 70, resist: { FIRE: 0, ICE: 0.1, LIGHT: 0, POISON: 0 }, gold: 7 },
+  Tank: { hp: 230, speed: 28, resist: { FIRE: 0.15, ICE: 0.15, LIGHT: 0.15, POISON: 0.15 }, gold: 16 },
+  Shield: { hp: 120, speed: 42, resist: { FIRE: 0.25, ICE: 0.1, LIGHT: 0.25, POISON: 0 }, gold: 10 },
+  Boss: { hp: 1400, speed: 36, resist: { FIRE: 0.2, ICE: 0.2, LIGHT: 0.2, POISON: 0.2 }, gold: 90 },
+};
+
+export const BLUEPRINT = {
+  FIRE: { range: 120, firerate: 0.8, dmg: 22, type: 'splash', status: Status.BURN },
+  ICE: { range: 130, firerate: 0.95, dmg: 12, type: 'bolt', status: Status.CHILL },
+  LIGHT: { range: 140, firerate: 0.7, dmg: 18, type: 'chain', status: Status.SHOCK },
+  POISON: { range: 120, firerate: 1.0, dmg: 8, type: 'bolt', status: Status.POISON },
+};
+
+export const TREES = {
+  FIRE: [
+    [
+      { key: 'INFERNO', name: 'Inferno', desc: 'Bigger burn DoT + splash', mod: t => { t.mod.burn += 0.6; t.mod.splash += 0.4; } },
+      { key: 'BLAST', name: 'Blast', desc: 'Raw dmg + small AoE', mod: t => { t.mod.dmg += 0.35; t.mod.aoe += 24; } },
+    ],
+    [
+      { key: 'WILDFIRE', req: 'INFERNO', name: 'Wildfire', mod: t => { t.mod.burnSpread = true; } },
+      { key: 'SEARING', req: 'INFERNO', name: 'Searing Heat', mod: t => { t.mod.burnAmp = 0.08; } },
+      { key: 'IMPACT', req: 'BLAST', name: 'High Impact', mod: t => { t.mod.splash = true; t.mod.aoe += 26; } },
+      { key: 'THERMAL', req: 'BLAST', name: 'Thermal Lance', mod: t => { t.type = 'bolt'; t.mod.pierce = 2; t.firerate *= 0.8; t.range += 10; } },
+    ],
+    [
+      { key: 'CATACLYSM', req: 'WILDFIRE', name: 'Cataclysm', mod: t => { t.mod.cataclysm = true; } },
+      { key: 'HELLFIRE', req: 'SEARING', name: 'Hellfire', mod: t => { t.mod.burn += 0.9; t.firerate *= 0.85; } },
+      { key: 'STARFALL', req: 'IMPACT', name: 'Starfall', mod: t => { t.mod.meteors = true; } },
+    ],
+  ],
+  ICE: [
+    [
+      { key: 'GLACIER', name: 'Glacier', mod: t => { t.mod.chill += 0.25; t.mod.slowDur += 0.8; } },
+      { key: 'NOVA', name: 'Frost Nova', mod: t => { t.mod.nova = true; } },
+    ],
+    [
+      { key: 'ARCTIC', req: 'GLACIER', name: 'Arctic Grip', mod: t => { t.mod.resShred += 0.06; } },
+      { key: 'SHATTER', req: 'GLACIER', name: 'Brittle', mod: t => { t.mod.shatter = 0.18; } },
+      { key: 'BLIZZ', req: 'NOVA', name: 'Blizzard', mod: t => { t.mod.novaFreq = 0.75; } },
+      { key: 'CRYO', req: 'NOVA', name: 'Cryo Core', mod: t => { t.mod.chill += 0.15; } },
+    ],
+    [
+      { key: 'ABSOLUTE', req: 'ARCTIC', name: 'Absolute Zero', mod: t => { t.mod.chill += 0.25; } },
+      { key: 'WHITEOUT', req: 'BLIZZ', name: 'Whiteout', mod: t => { t.range += 20; } },
+    ],
+  ],
+  LIGHT: [
+    [
+      { key: 'CHAIN', name: 'Chain', mod: t => { t.mod.chainBounce += 2; t.mod.chainRange += 40; } },
+      { key: 'OVERLOAD', name: 'Overload', mod: t => { t.mod.stun += 0.15; t.mod.dmg += 0.2; } },
+    ],
+    [
+      { key: 'SUPERCELL', req: 'CHAIN', name: 'Supercell', mod: t => { t.mod.chainBounce += 2; } },
+      { key: 'IONIZE', req: 'CHAIN', name: 'Ionize', mod: t => { t.mod.lightDot = 5; } },
+      { key: 'BLACKOUT', req: 'OVERLOAD', name: 'Blackout', mod: t => { t.mod.stunChain = true; } },
+    ],
+    [
+      { key: 'TEMPEST', req: 'SUPERCELL', name: 'Tempest', mod: t => { t.mod.chainBounce += 3; } },
+      { key: 'SINGULAR', req: 'IONIZE', name: 'Singularity', mod: t => { t.mod.singularity = true; } },
+    ],
+  ],
+  POISON: [
+    [
+      { key: 'VENOM', name: 'Venom', mod: t => { t.mod.poison += 0.6; t.mod.maxStacks += 2; } },
+      { key: 'NEURO', name: 'Neurotoxin', mod: t => { t.mod.resShred += 0.08; } },
+    ],
+    [
+      { key: 'BLIGHT', req: 'VENOM', name: 'Blight', mod: t => { t.mod.poisonSpread = true; } },
+      { key: 'ACID', req: 'VENOM', name: 'Acid Mix', mod: t => { t.mod.acidAmp = 0.12; } },
+      { key: 'NEUROSHOCK', req: 'NEURO', name: 'Neuroshock+', mod: t => { t.mod.stun += 0.1; } },
+    ],
+    [
+      { key: 'PLAGUE', req: 'BLIGHT', name: 'Plague Lord', mod: t => { t.mod.maxStacks += 2; t.mod.poison += 0.6; } },
+      { key: 'SYNAPSE', req: 'NEUROSHOCK', name: 'Synaptic Overload', mod: t => { t.mod.stunDmg = 14; } },
+    ],
+  ],
+};
+
+export const defaultContent = {
+  TILE, GRID_W, GRID_H, START, END,
+  Elt, Status, ELEMENTS, EltColor, EltType, EltStatus,
+  COST, UPG_COST, UNLOCK_TIERS, ResistProfiles, BLUEPRINT, TREES
+};
