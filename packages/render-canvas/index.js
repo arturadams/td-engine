@@ -208,6 +208,41 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
           ctx.fill();
           break;
         }
+        case 'EARTH': {
+          ctx.fillStyle = '#a3a3a3';
+          ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#737373';
+          ctx.fillRect(-1, -1, 2, 2);
+          break;
+        }
+        case 'WIND': {
+          ctx.strokeStyle = '#bae6fd';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.stroke();
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(2, 0); ctx.stroke();
+          break;
+        }
+        case 'WATER': {
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.fillStyle = '#7dd3fc';
+          ctx.beginPath();
+          ctx.moveTo(0, -5);
+          ctx.quadraticCurveTo(3, 0, 0, 5);
+          ctx.quadraticCurveTo(-3, 0, 0, -5);
+          ctx.fill();
+          break;
+        }
+        case 'DARK': {
+          const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 4);
+          g.addColorStop(0, '#1f2937');
+          g.addColorStop(1, '#4b5563');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+          break;
+        }
         default: {
           ctx.beginPath(); ctx.arc(0, 0, b.r || 4, 0, Math.PI * 2); ctx.fill();
         }

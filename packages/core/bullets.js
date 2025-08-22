@@ -41,6 +41,30 @@ function spawnImpact(state, b) {
         }
         case 'POISON':
             count = 7; speed = 45; ttl = 0.6; ring = 16; break;
+        case 'WATER': {
+            count = 12; speed = 80; ttl = 0.5; ring = 20;
+            // splash burst
+            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 100, ttl: 0.25, max: 0.25, a: 1, color: '#7dd3fc', circle: true });
+            break;
+        }
+        case 'EARTH': {
+            count = 10; speed = 50; ttl = 0.5; ring = 18;
+            // dusty burst
+            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 70, ttl: 0.4, max: 0.4, a: 1, color: '#a3a3a3', circle: true });
+            break;
+        }
+        case 'WIND': {
+            count = 8; speed = 100; ttl = 0.3; ring = 22;
+            // shockwave ripple
+            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 140, ttl: 0.2, max: 0.2, a: 1, color: '#dbeafe', circle: true });
+            break;
+        }
+        case 'DARK': {
+            count = 9; speed = 70; ttl = 0.5; ring = 22;
+            // void pulse
+            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 120, ttl: 0.3, max: 0.3, a: 1, color: '#1f2937', circle: true });
+            break;
+        }
     }
     state.particles.push({ x: b.x, y: b.y, r: 0, vr: ring / ttl, ttl, max: ttl, a: 1, color, ring: true });
     for (let n = 0; n < count; n++) {
@@ -75,6 +99,18 @@ export function updateBullets(state, { onCreepDamage }) {
                 break;
             case 'POISON':
                 state.particles.push({ x: b.x, y: b.y, r: 1.5, ttl: 0.3, max: 0.3, a: 1, color: '#bbf7d0', circle: true });
+                break;
+            case 'EARTH':
+                state.particles.push({ x: b.x, y: b.y, r: 1.5, ttl: 0.3, max: 0.3, a: 1, color: '#a3a3a3', circle: true });
+                break;
+            case 'WIND':
+                state.particles.push({ x: b.x, y: b.y, r: 1.5, ttl: 0.2, max: 0.2, a: 1, color: '#bae6fd', circle: true });
+                break;
+            case 'WATER':
+                state.particles.push({ x: b.x, y: b.y, r: 1.5, ttl: 0.25, max: 0.25, a: 1, color: '#7dd3fc', circle: true });
+                break;
+            case 'DARK':
+                state.particles.push({ x: b.x, y: b.y, r: 1.5, ttl: 0.3, max: 0.3, a: 1, color: '#4b5563', circle: true });
                 break;
         }
 
