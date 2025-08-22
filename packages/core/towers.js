@@ -43,6 +43,20 @@ function handleMeteors(state, { onHit, onCreepDamage }, t, dt) {
 }
 
 function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
+    const dx = target.x - t.x, dy = target.y - t.y;
+    const dist = Math.hypot(dx, dy);
+    const speed = 480;
+    // create a visual bullet
+    state.bullets.push({
+        kind: 'bolt',
+        x: t.x, y: t.y,
+        vx: (dx / dist) * speed,
+        vy: (dy / dist) * speed,
+        ttl: dist / speed,
+        color: EltColor[t.elt],
+        fromId: t.id,
+    });
+
     const hit = state.rng() < acc; if (hit) { state.hits++; onHit?.(t.id); }
     if (hit) {
         takeDamage(target, dmg, t.elt, target.status.resShred || 0);
@@ -86,6 +100,19 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
     while (bounces-- > 0) {
         const next = state.creeps.find(c => c.alive && !bounced.has(c.id) && Math.hypot(c.x - last.x, c.y - last.y) <= chainRange);
         if (!next) break; bounced.add(next.id);
+
+        const dx = next.x - last.x, dy = next.y - last.y;
+        const dist = Math.hypot(dx, dy);
+        const speed = 480;
+        state.bullets.push({
+            kind: 'bolt',
+            x: last.x, y: last.y,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+            ttl: dist / speed,
+            color: EltColor[t.elt],
+        });
+
         takeDamage(next, dmg * 0.6, t.elt, next.status.resShred || 0);
         applyStatus(next, t.status, t);
         if (t.mod.stunChain) next.status.stun = Math.max(next.status.stun || 0, 0.25);
