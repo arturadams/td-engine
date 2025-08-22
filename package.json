@@ -1,22 +1,13 @@
 {
     "name": "@your-scope/td-core",
     "type": "module",
+    "scripts": {
+        "test": "node -e \"console.log('No tests defined')\""
+    },
     "exports": {
-        ".": {
-            "types": "./index.d.ts",
-            "default": "./index.js"
-        },
-        "./engine.js": {
-            "types": "./engine.d.ts",
-            "default": "./engine.js"
-        },
-        "./content.js": {
-            "types": "./content.d.ts",
-            "default": "./content.js"
-        },
-        "./selectors.js": {
-            "types": "./selectors.d.ts",
-            "default": "./selectors.js"
-        }
+        ".": "./packages/core/index.js",
+        "./engine.js": "./packages/core/engine.js",
+        "./content.js": "./packages/core/content.js",
+        "./selectors.js": "./packages/core/selectors.js"
     }
 }
