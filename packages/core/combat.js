@@ -4,8 +4,14 @@ import { Status } from './content.js';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export function takeDamage(c, raw, elt, shred = 0) {
-    const resist = clamp((c.resist[elt] || 0) - shred, -0.5, 0.8);
-    const dmg = raw * (1 - resist);
+    let resist = clamp((c.resist[elt] || 0) - shred, -0.5, 0.8);
+    if (c.status[Status.EXPOSED]) {
+        resist = clamp(resist - c.status[Status.EXPOSED].shred, -0.5, 0.8);
+    }
+    let dmg = raw * (1 - resist);
+    if (c.status[Status.BRITTLE]) {
+        dmg *= 1 + c.status[Status.BRITTLE].amp;
+    }
     c.hp -= dmg;
     return dmg;
 }
@@ -26,6 +32,15 @@ export function applyStatus(c, status, fromTower) {
     if (status === Status.SHOCK) {
         c.status[Status.SHOCK] = { t: 1.2, power: 1 };
     }
+    if (status === Status.BRITTLE) {
+        c.status[Status.BRITTLE] = { t: 2.5, amp: 0.25 };
+    }
+    if (status === Status.EXPOSED) {
+        c.status[Status.EXPOSED] = { t: 2.5, shred: 0.2 };
+    }
+    if (status === Status.MANA_BURN) {
+        c.status[Status.MANA_BURN] = { t: 2.0, dot: 10 };
+    }
     if (m.resShred) c.status.resShred = Math.max(c.status.resShred || 0, m.resShred);
 
     // Combos
@@ -33,6 +48,8 @@ export function applyStatus(c, status, fromTower) {
     const hasPoison = !!c.status[Status.POISON];
     const hasChill = !!c.status[Status.CHILL];
     const hasShock = !!c.status[Status.SHOCK];
+    const hasBrittle = !!c.status[Status.BRITTLE];
+    const hasExposed = !!c.status[Status.EXPOSED];
 
     if (hasBurn && hasPoison && !c.status.combo_acid) {
         c.status.combo_acid = 2.0;
@@ -47,6 +64,14 @@ export function applyStatus(c, status, fromTower) {
         c.status.stun = Math.max(c.status.stun || 0, 0.5 + (m.stun || 0));
         return 'combo.neuro';
     }
+    if (hasBrittle && hasBurn) {
+        const burst = 0.15 * c.hp; c.hp -= burst;
+        return 'combo.glassfire';
+    }
+    if (hasExposed && hasBurn) {
+        c.status[Status.BURN].dot *= 1.5;
+        return 'combo.fanned';
+    }
     return null;
 }
 
@@ -59,6 +84,15 @@ export function tickStatusesAndCombos(c, dt) {
     }
     if (c.status[Status.CHILL]) {
         const s = c.status[Status.CHILL]; s.t -= dt; if (s.t <= 0) delete c.status[Status.CHILL];
+    }
+    if (c.status[Status.BRITTLE]) {
+        const s = c.status[Status.BRITTLE]; s.t -= dt; if (s.t <= 0) delete c.status[Status.BRITTLE];
+    }
+    if (c.status[Status.EXPOSED]) {
+        const s = c.status[Status.EXPOSED]; s.t -= dt; if (s.t <= 0) delete c.status[Status.EXPOSED];
+    }
+    if (c.status[Status.MANA_BURN]) {
+        const s = c.status[Status.MANA_BURN]; s.t -= dt; c.hp -= s.dot * dt; if (s.t <= 0) delete c.status[Status.MANA_BURN];
     }
     if (c.status.combo_acid) {
         c.status.combo_acid -= dt; c.hp -= (c.status.acid.dot * dt);
