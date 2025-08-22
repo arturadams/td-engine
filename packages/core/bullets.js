@@ -1,6 +1,58 @@
 // packages/core/bullets.js
 import { takeDamage, applyStatus } from './combat.js';
 
+function spawnTrail(state, b) {
+    const rng = state.rng;
+    switch (b.elt) {
+        case 'FIRE': {
+            if (rng() < 0.7) {
+                state.particles.push({
+                    x: b.x, y: b.y,
+                    ang: rng() * Math.PI * 2,
+                    len: 6,
+                    ttl: 0.3, max: 0.3, a: 1,
+                    color: '#fb923c', spark: true
+                });
+            }
+            break;
+        }
+        case 'ICE': {
+            if (rng() < 0.6) {
+                state.particles.push({
+                    x: b.x, y: b.y,
+                    r: 0, vr: 20,
+                    ttl: 0.4, max: 0.4, a: 1,
+                    color: '#e0f2fe', circle: true
+                });
+            }
+            break;
+        }
+        case 'LIGHT': {
+            if (rng() < 0.7) {
+                state.particles.push({
+                    x: b.x, y: b.y,
+                    ang: rng() * Math.PI * 2,
+                    len: 8,
+                    ttl: 0.2, max: 0.2, a: 1,
+                    color: '#faf5ff', spark: true
+                });
+            }
+            break;
+        }
+        case 'POISON': {
+            if (rng() < 0.6) {
+                state.particles.push({
+                    x: b.x, y: b.y,
+                    r: 0, vr: 14,
+                    ttl: 0.35, max: 0.35, a: 1,
+                    color: '#bbf7d0', circle: true
+                });
+            }
+            break;
+        }
+    }
+}
+
 function spawnImpact(state, b) {
     const rng = state.rng;
     const color = b.color || '#94a3b8';
@@ -39,8 +91,16 @@ function spawnImpact(state, b) {
             state.particles.push({ x: b.x, y: b.y, r: 0, vr: 200, ttl: 0.15, max: 0.15, a: 1, color: '#faf5ff', circle: true });
             break;
         }
-        case 'POISON':
-            count = 7; speed = 45; ttl = 0.6; ring = 16; break;
+        case 'POISON': {
+            count = 9; speed = 60; ttl = 0.7; ring = 18;
+            // toxic splash
+            for (let n = 0; n < 5; n++) {
+                const ang = rng() * Math.PI * 2;
+                state.particles.push({ x: b.x, y: b.y, ang, len: 10, ttl: 0.5, max: 0.5, a: 1, color: '#4ade80', spark: true });
+            }
+            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 50, ttl: 0.4, max: 0.4, a: 1, color: '#86efac', circle: true });
+            break;
+        }
     }
     state.particles.push({ x: b.x, y: b.y, r: 0, vr: ring / ttl, ttl, max: ttl, a: 1, color, ring: true });
     for (let n = 0; n < count; n++) {
@@ -61,6 +121,7 @@ export function updateBullets(state, { onCreepDamage }) {
         b.ttl -= state.dt;
         b.x += b.vx * state.dt;
         b.y += b.vy * state.dt;
+        spawnTrail(state, b);
 
         if (b.ttl <= 0) {
             if (b.kind === 'splash') {
