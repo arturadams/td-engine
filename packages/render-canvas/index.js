@@ -163,9 +163,51 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
   function drawBullets(state) {
     for (const b of state.bullets) {
       ctx.save();
+      ctx.translate(b.x, b.y);
       ctx.fillStyle = b.color || '#94a3b8';
       ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r || 4, 0, Math.PI * 2); ctx.fill();
+
+      switch (b.elt) {
+        case 'FIRE': {
+          ctx.beginPath(); ctx.arc(0, 0, b.r || 4, 0, Math.PI * 2); ctx.fill();
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.fillRect(-4, -1, -8, 2);
+          break;
+        }
+        case 'ICE': {
+          ctx.rotate(Math.PI / 4);
+          ctx.fillRect(-3, -3, 6, 6);
+          break;
+        }
+        case 'LIGHT': {
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.strokeStyle = b.color || '#94a3b8';
+          ctx.lineWidth = 2;
+          const j = (Math.random() - 0.5) * 2;
+          ctx.beginPath();
+          ctx.moveTo(-3, -2);
+          ctx.lineTo(-1, 2 + j);
+          ctx.lineTo(1, -2 - j);
+          ctx.lineTo(3, 2);
+          ctx.stroke();
+          break;
+        }
+        case 'POISON': {
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.beginPath();
+          ctx.moveTo(0, -5);
+          ctx.bezierCurveTo(3, -2, 3, 4, 0, 5);
+          ctx.bezierCurveTo(-3, 4, -3, -2, 0, -5);
+          ctx.fill();
+          break;
+        }
+        default: {
+          ctx.beginPath(); ctx.arc(0, 0, b.r || 4, 0, Math.PI * 2); ctx.fill();
+        }
+      }
       ctx.restore();
     }
   }
@@ -178,6 +220,19 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
         ctx.globalAlpha = Math.max(0, p.a ?? 0.6);
         ctx.strokeStyle = p.color || '#94a3b8';
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.stroke();
+      } else if (p.circle) {
+        ctx.globalAlpha = Math.max(0, p.a ?? 0.6);
+        ctx.fillStyle = p.color || '#94a3b8';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      } else if (p.spark) {
+        ctx.globalAlpha = Math.max(0, p.a ?? 1);
+        ctx.strokeStyle = p.color || '#94a3b8';
+        ctx.lineWidth = 2;
+        const len = p.len || 6;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + Math.cos(p.ang || 0) * len, p.y + Math.sin(p.ang || 0) * len);
+        ctx.stroke();
       } else {
         ctx.globalAlpha = Math.max(0, p.a ?? 1);
         ctx.fillStyle = p.color || '#94a3b8';
