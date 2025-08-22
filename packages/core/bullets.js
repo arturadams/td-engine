@@ -1,6 +1,7 @@
 // packages/core/bullets.js
 import { takeDamage, applyStatus } from './combat.js';
 import { acquireParticle } from './particles.js';
+import { getEffect } from './effects/index.js';
 
 function addParticle(state, props) {
     const p = acquireParticle();
@@ -65,6 +66,8 @@ function spawnImpact(state, b) {
 export function updateBullets(state, { onCreepDamage }) {
     for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
+        const effect = getEffect(b.elt);
+        effect.trail(state, b);
         b.ttl -= state.dt;
         b.x += b.vx * state.dt;
         b.y += b.vy * state.dt;
@@ -83,8 +86,9 @@ export function updateBullets(state, { onCreepDamage }) {
                     }
                 }
                 if (hitAny) state.hits++;
+                effect.aoe(state, b);
             }
-            spawnImpact(state, b);
+            effect.impact(state, b);
             state.bullets.splice(i, 1);
         }
     }
