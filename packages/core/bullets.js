@@ -69,8 +69,16 @@ function spawnImpact(state, b) {
             // icy spikes
             for (let n = 0; n < 4; n++) {
                 const ang = rng() * Math.PI * 2;
-                state.particles.push({ x: b.x, y: b.y, ang, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
-                state.particles.push({ x: b.x, y: b.y, ang: ang + Math.PI / 2, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
+                state.particles.push({
+                    x: b.x, y: b.y, ang,
+                    len: 8, ttl: 0.5, max: 0.5, a: 1,
+                    color: '#e0f2fe', spark: true,
+                });
+                state.particles.push({
+                    x: b.x, y: b.y, ang: ang + Math.PI / 2,
+                    len: 8, ttl: 0.5, max: 0.5, a: 1,
+                    color: '#e0f2fe', spark: true,
+                });
             }
             state.particles.push({ x: b.x, y: b.y, r: 0, vr: 60, ttl: 0.3, max: 0.3, a: 1, color: '#bae6fd', circle: true });
             break;
