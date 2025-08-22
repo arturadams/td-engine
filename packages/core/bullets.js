@@ -1,5 +1,12 @@
 // packages/core/bullets.js
 import { takeDamage, applyStatus } from './combat.js';
+import { acquireParticle } from './particles.js';
+
+function addParticle(state, props) {
+    const p = acquireParticle();
+    Object.assign(p, props);
+    state.particles.push(p);
+}
 
 function spawnImpact(state, b) {
     const rng = state.rng;
@@ -9,7 +16,7 @@ function spawnImpact(state, b) {
         case 'FIRE': {
             count = 12; speed = 140; ttl = 0.5; ring = 22;
             // bright flash for fiery explosion
-            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 120, ttl: 0.25, max: 0.25, a: 1, color: '#f97316', circle: true });
+            addParticle(state, { x: b.x, y: b.y, r: 0, vr: 120, ttl: 0.25, max: 0.25, a: 1, color: '#f97316', circle: true });
             break;
         }
         case 'ICE': {
@@ -17,10 +24,10 @@ function spawnImpact(state, b) {
             // icy spikes
             for (let n = 0; n < 4; n++) {
                 const ang = rng() * Math.PI * 2;
-                state.particles.push({ x: b.x, y: b.y, ang, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
-                state.particles.push({ x: b.x, y: b.y, ang: ang + Math.PI / 2, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
+                addParticle(state, { x: b.x, y: b.y, ang, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
+                addParticle(state, { x: b.x, y: b.y, ang: ang + Math.PI / 2, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
             }
-            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 60, ttl: 0.3, max: 0.3, a: 1, color: '#bae6fd', circle: true });
+            addParticle(state, { x: b.x, y: b.y, r: 0, vr: 60, ttl: 0.3, max: 0.3, a: 1, color: '#bae6fd', circle: true });
             break;
         }
         case 'LIGHT': {
@@ -29,24 +36,24 @@ function spawnImpact(state, b) {
             for (let n = 0; n < 6; n++) {
                 const ang = rng() * Math.PI * 2;
                 const sp = 160;
-                state.particles.push({
+                addParticle(state, {
                     x: b.x, y: b.y,
                     vx: Math.cos(ang) * sp,
                     vy: Math.sin(ang) * sp,
                     ang, len: 12, ttl: 0.3, max: 0.3, a: 1, color: '#faf5ff', spark: true,
                 });
             }
-            state.particles.push({ x: b.x, y: b.y, r: 0, vr: 200, ttl: 0.15, max: 0.15, a: 1, color: '#faf5ff', circle: true });
+            addParticle(state, { x: b.x, y: b.y, r: 0, vr: 200, ttl: 0.15, max: 0.15, a: 1, color: '#faf5ff', circle: true });
             break;
         }
         case 'POISON':
             count = 7; speed = 45; ttl = 0.6; ring = 16; break;
     }
-    state.particles.push({ x: b.x, y: b.y, r: 0, vr: ring / ttl, ttl, max: ttl, a: 1, color, ring: true });
+    addParticle(state, { x: b.x, y: b.y, r: 0, vr: ring / ttl, ttl, max: ttl, a: 1, color, ring: true });
     for (let n = 0; n < count; n++) {
         const ang = rng() * Math.PI * 2;
         const sp = speed * (0.5 + rng());
-        state.particles.push({
+        addParticle(state, {
             x: b.x, y: b.y,
             vx: Math.cos(ang) * sp,
             vy: Math.sin(ang) * sp,
