@@ -4,6 +4,7 @@
 import { cellCenterForMap } from './map.js';
 import { astar } from './pathfinding.js';
 import { tickStatusesAndCombos } from './combat.js';
+import { getDeathFx } from './deaths/index.js';
 
 export function recomputePathingForAll(state, isBlocked) {
   const { start, end, size } = state.map;
@@ -44,6 +45,7 @@ export function cullDead(state, { onKill }) {
       if (c.hp <= 0) {
         state.gold += c.gold;
         state.score += 3;
+        getDeathFx(c.type).die(state, c);
         onKill?.(c);
       }
       state.creeps.splice(i, 1);
