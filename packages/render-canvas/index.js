@@ -163,9 +163,38 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
   function drawBullets(state) {
     for (const b of state.bullets) {
       ctx.save();
+      ctx.translate(b.x, b.y);
       ctx.fillStyle = b.color || '#94a3b8';
       ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r || 4, 0, Math.PI * 2); ctx.fill();
+
+      switch (b.elt) {
+        case 'FIRE': {
+          ctx.beginPath(); ctx.arc(0, 0, b.r || 4, 0, Math.PI * 2); ctx.fill();
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.fillRect(-4, -1, -8, 2);
+          break;
+        }
+        case 'ICE': {
+          ctx.rotate(Math.PI / 4);
+          ctx.fillRect(-3, -3, 6, 6);
+          break;
+        }
+        case 'LIGHT': {
+          ctx.beginPath();
+          ctx.moveTo(-4, 0); ctx.lineTo(0, -4); ctx.lineTo(4, 0); ctx.lineTo(0, 4);
+          ctx.closePath(); ctx.fill();
+          break;
+        }
+        case 'POISON': {
+          ctx.beginPath(); ctx.arc(0, 0, b.r || 4, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 0.3; ctx.fillRect(-4, -4, 8, 8); ctx.globalAlpha = 1;
+          break;
+        }
+        default: {
+          ctx.beginPath(); ctx.arc(0, 0, b.r || 4, 0, Math.PI * 2); ctx.fill();
+        }
+      }
       ctx.restore();
     }
   }
