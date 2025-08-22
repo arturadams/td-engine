@@ -21,8 +21,34 @@ export const EltColor = Object.fromEntries(ELEMENTS.map(e => [e.key, e.color]));
 export const EltType = Object.fromEntries(ELEMENTS.map(e => [e.key, e.type]));
 export const EltStatus = Object.fromEntries(ELEMENTS.map(e => [e.key, e.status]));
 
-export const COST = { FIRE: 70, ICE: 70, LIGHT: 90, POISON: 75 };
-export const UPG_COST = (lvl) => 80 + lvl * 45;
+// Non-elemental/basic towers that don't inflict statuses
+export const BASIC_TOWERS = ['ARCHER', 'CANNON'];
+
+export const COST = {
+  ARCHER: 50,
+  CANNON: 60,
+  FIRE: 100,
+  ICE: 100,
+  LIGHT: 120,
+  POISON: 110,
+};
+
+// Upgrade cost now varies by tower category; `elt` is optional for backwards compat
+export const UPG_COST = (lvl, elt) => {
+  if (!elt) return 80 + lvl * 45;
+  const basic = BASIC_TOWERS.includes(elt);
+  const base = basic ? 40 : 80;
+  const scale = basic ? 30 : 60;
+  return base + lvl * scale;
+};
+
+export const UPGRADE_MULT = {
+  basic: { dmg: 1.12, firerate: 1.04, range: 4 },
+  elemental: { dmg: 1.18, firerate: 1.06, range: 5 },
+};
+
+export const REFUND_RATE = { basic: 0.8, elemental: 0.75 };
+
 export const UNLOCK_TIERS = [2, 4, 6];
 //export const EVO_COST = tier => [120, 220, 400][tier] || 500;
 
@@ -35,6 +61,8 @@ export const ResistProfiles = {
 };
 
 export const BLUEPRINT = {
+  ARCHER: { range: 110, firerate: 1.1, dmg: 9, type: 'bolt', status: null },
+  CANNON: { range: 120, firerate: 0.75, dmg: 16, type: 'splash', status: null },
   FIRE: { range: 120, firerate: 0.8, dmg: 22, type: 'splash', status: Status.BURN },
   ICE: { range: 130, firerate: 0.95, dmg: 12, type: 'bolt', status: Status.CHILL },
   LIGHT: { range: 140, firerate: 0.7, dmg: 18, type: 'chain', status: Status.SHOCK },
@@ -110,5 +138,7 @@ export const TREES = {
 export const defaultContent = {
   TILE, GRID_W, GRID_H, START, END,
   Elt, Status, ELEMENTS, EltColor, EltType, EltStatus,
-  COST, UPG_COST, UNLOCK_TIERS, ResistProfiles, BLUEPRINT, TREES
+  BASIC_TOWERS,
+  COST, UPG_COST, UNLOCK_TIERS, ResistProfiles, BLUEPRINT, TREES,
+  UPGRADE_MULT, REFUND_RATE,
 };

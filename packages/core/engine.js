@@ -1,7 +1,7 @@
 // packages/core/engine.js
 
 import { createInitialState, resetState } from './state.js';
-import { Elt, BLUEPRINT, COST, UPG_COST, TREES, UNLOCK_TIERS, TILE } from './content.js';
+import { Elt, BLUEPRINT, COST, UPG_COST, TREES, UNLOCK_TIERS, TILE, BASIC_TOWERS, UPGRADE_MULT, REFUND_RATE } from './content.js';
 import { defaultWaveConfig, createWaveController } from './waves.js';
 import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
@@ -103,7 +103,9 @@ export function createEngine(seedState) {
         const idx = state.towers.findIndex(t => t.id === id);
         if (idx < 0) return false;
         const t = state.towers[idx];
-        const refund = Math.floor(t.spent * 0.8);
+        const isBasic = BASIC_TOWERS.includes(t.elt);
+        const rate = isBasic ? REFUND_RATE.basic : REFUND_RATE.elemental;
+        const refund = Math.floor(t.spent * rate);
         state.towers.splice(idx, 1);
         if (state.selectedTowerId === id) state.selectedTowerId = null;
 
@@ -130,13 +132,14 @@ export function createEngine(seedState) {
 
     function levelUpSelected() {
         const t = state.towers.find(tt => tt.id === state.selectedTowerId); if (!t) return false;
-        const cost = UPG_COST(t.lvl); if (state.gold < cost) return false;
+        const cost = UPG_COST(t.lvl, t.elt); if (state.gold < cost) return false;
 
         onGoldChange(-cost, 'level_up');
         const prev = t.lvl;
         t.lvl++;
         t.spent += cost;
-        t.dmg *= 1.12; t.firerate *= 1.04; t.range += 4;
+        const mult = BASIC_TOWERS.includes(t.elt) ? UPGRADE_MULT.basic : UPGRADE_MULT.elemental;
+        t.dmg *= mult.dmg; t.firerate *= mult.firerate; t.range += mult.range;
 
         const unlocked = UNLOCK_TIERS.filter(u => t.lvl >= u).length;
         const credits = t.freeTierPicks || 0;
