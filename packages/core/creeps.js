@@ -36,15 +36,14 @@ export function advanceCreep(state, c, onLeak) {
   if (c.t >= d) { c.seg++; c.t = 0; c.x = c.path[c.seg].x; c.y = c.path[c.seg].y; }
 }
 
-export function cullDead(state, emitter, onKill) {
+export function cullDead(state, { onKill }) {
   for (let i = state.creeps.length - 1; i >= 0; i--) {
     const c = state.creeps[i];
     if (!c.alive || c.hp <= 0) {
       if (c.hp <= 0) {
         state.gold += c.gold;
         state.score += 3;
-        onKill(c);
-        emitter.emit({ type: 'creep.kill', creep: { id: c.id, type: c.type } });
+        onKill?.(c);
       }
       state.creeps.splice(i, 1);
     }

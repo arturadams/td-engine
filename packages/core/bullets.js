@@ -1,7 +1,7 @@
 // packages/core/bullets.js
 import { takeDamage, applyStatus } from './combat.js';
 
-export function updateBullets(state, emitter) {
+export function updateBullets(state, { onCreepDamage }) {
     for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
         b.ttl -= state.dt;
@@ -18,10 +18,10 @@ export function updateBullets(state, emitter) {
                         takeDamage(c, b.dmg, b.elt, c.status.resShred || 0);
                         applyStatus(c, b.status, fromT);
                         hitAny = true;
+                        onCreepDamage?.({ creep: c, amount: b.dmg, elt: b.elt, towerId: fromT?.id });
                     }
                 }
                 if (hitAny) state.hits++;
-                emitter.emit({ type: 'fx.aoe', x: b.x, y: b.y, r: b.aoe, color: b.color, ttl: 0.18 });
             }
             state.bullets.splice(i, 1);
         }

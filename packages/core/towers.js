@@ -15,7 +15,7 @@ export function targetInRange(state, t) {
     return best;
 }
 
-export function fireTower(state, emitter, t, dt) {
+export function fireTower(state, { onShot, onHit, onCreepDamage }, t, dt) {
     if (t.cooldown > 0) { t.cooldown -= dt; return; }
 
     // Ice: periodic Nova slow
@@ -28,7 +28,6 @@ export function fireTower(state, emitter, t, dt) {
                 const d = Math.hypot(c.x - t.x, c.y - t.y);
                 if (d <= t.range * 0.7) applyStatus(c, Status.CHILL, t);
             }
-            emitter.emit({ type: 'fx.frost', x: t.x, y: t.y, r: t.range * 0.7, color: '#93c5fd', ttl: 0.25 });
         }
     }
 
@@ -42,7 +41,8 @@ export function fireTower(state, emitter, t, dt) {
             if (c) {
                 takeDamage(c, t.dmg, t.elt, c.status.resShred || 0);
                 applyStatus(c, t.status, t);
-                emitter.emit({ type: 'fx.impact', x: c.x, y: c.y, r: 36, color: '#f59e0b', ttl: 0.18 });
+                onHit?.(t.id);
+                onCreepDamage?.({ creep: c, amount: t.dmg, elt: t.elt, towerId: t.id });
             }
         }
     }
@@ -51,17 +51,15 @@ export function fireTower(state, emitter, t, dt) {
 
     const dmg = t.dmg * (1 + t.mod.dmg + t.synergy);
     const acc = 0.98; state.shots++;
+    onShot?.(t.id);
 
     if (t.type === 'bolt' || t.type === 'chain') {
-        const hit = state.rng() < acc; if (hit) state.hits++;
-        emitter.emit({ type: 'fx.beam', x1: t.x, y1: t.y, x2: target.x, y2: target.y, color: EltColor[t.elt], ttl: 0.08 });
+        const hit = state.rng() < acc; if (hit) { state.hits++; onHit?.(t.id); }
 
         if (hit) {
             takeDamage(target, dmg, t.elt, target.status.resShred || 0);
             applyStatus(target, t.status, t);
-            // status puffs
-            if (t.status === Status.CHILL) emitter.emit({ type: 'fx.frost', x: target.x, y: target.y, r: 12, color: '#38bdf8', ttl: 0.2 });
-            if (t.status === Status.POISON) emitter.emit({ type: 'fx.poison', x: target.x, y: target.y, r: 10, color: '#84cc16', ttl: 0.25 });
+            onCreepDamage?.({ creep: target, amount: dmg, elt: t.elt, towerId: t.id });
 
             // pierce line
             if (t.mod.pierce && t.mod.pierce > 0) {
@@ -76,7 +74,8 @@ export function fireTower(state, emitter, t, dt) {
                         if (dist < 10) {
                             takeDamage(c, dmg * 0.7, t.elt, c.status.resShred || 0);
                             applyStatus(c, t.status, t);
-                            emitter.emit({ type: 'fx.beam', x1: target.x, y1: target.y, x2: c.x, y2: c.y, color: EltColor[t.elt], ttl: 0.06 });
+                            onHit?.(t.id);
+                            onCreepDamage?.({ creep: c, amount: dmg * 0.7, elt: t.elt, towerId: t.id });
                             remaining--; if (remaining <= 0) break;
                         }
                     }
@@ -94,7 +93,8 @@ export function fireTower(state, emitter, t, dt) {
                     applyStatus(next, t.status, t);
                     if (t.mod.stunChain) next.status.stun = Math.max(next.status.stun || 0, 0.25);
                     if (t.mod.lightDot) next.status.lightDot = { dot: t.mod.lightDot, t: 1.5 };
-                    emitter.emit({ type: 'fx.beam', x1: last.x, y1: last.y, x2: next.x, y2: next.y, color: '#c4b5fd', ttl: 0.08 });
+                    onHit?.(t.id);
+                    onCreepDamage?.({ creep: next, amount: dmg * 0.6, elt: t.elt, towerId: t.id });
                     last = next;
                 }
             }
@@ -121,6 +121,7 @@ export function fireTower(state, emitter, t, dt) {
             dmg,
         });
         state.shots++;
+        onShot?.(t.id);
         t.cooldown = 1 / t.firerate;
     }
 }
