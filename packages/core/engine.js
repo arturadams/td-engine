@@ -6,6 +6,7 @@ import { defaultWaveConfig, createWaveController } from './waves.js';
 import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
 import { updateBullets } from './bullets.js';
+import { updateParticles } from './particles.js';
 import { astar } from './pathfinding.js';
 import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
@@ -219,6 +220,8 @@ export function createEngine(seedState) {
         cullDead(state, {
             onKill: (c) => { onCreepKill(c); onGoldChange(+c.gold, 'kill'); },
         });
+
+        updateParticles(state);
 
         const canAuto = state.autoWaveEnabled && !state.gameOver && !waves.isSpawning() && state.creeps.length === 0;
         if (canAuto) {
