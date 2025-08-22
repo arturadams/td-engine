@@ -87,6 +87,7 @@ export function createEngine(seedState) {
             cooldown: 0, spent: cost,
             mod: { dmg: 0, burn: 0, poison: 0, chill: 0, slowDur: 0, chainBounce: 0, chainRange: 0, stun: 0, aoe: 0, splash: 0, nova: false, resShred: 0, maxStacks: 1, pierce: 0 },
             synergy: 0, novaTimer: 0, kills: 0, freeTierPicks: 0,
+            targeting: 'first', _cycleIndex: 0,
         };
         state.towers.push(t);
         onGoldChange(-cost, 'place_tower');
@@ -156,6 +157,15 @@ export function createEngine(seedState) {
         const choices = branch[currentTier].filter(n => !n.req || t.tree.includes(n.req));
         const chosen = choices.find(n => n.key === key); if (!chosen) return false;
         chosen.mod(t); t.tree.push(chosen.key); t.freeTierPicks--;
+        return true;
+    }
+
+    function setTargeting(mode) {
+        const t = state.towers.find(tt => tt.id === state.selectedTowerId);
+        if (!t) return false;
+        if (!['first', 'last', 'cycle'].includes(mode)) return false;
+        t.targeting = mode;
+        t._cycleIndex = 0;
         return true;
     }
 
@@ -428,6 +438,7 @@ export function createEngine(seedState) {
         setBuild,
         levelUpSelected,
         applyEvolution,
+        setTargeting,
 
         // waves/runtime
         startWave,
