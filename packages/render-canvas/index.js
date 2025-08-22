@@ -181,14 +181,22 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
           break;
         }
         case 'LIGHT': {
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
           ctx.beginPath();
-          ctx.moveTo(-4, 0); ctx.lineTo(0, -4); ctx.lineTo(4, 0); ctx.lineTo(0, 4);
+          ctx.moveTo(-2, -4); ctx.lineTo(0, -1); ctx.lineTo(2, -4);
+          ctx.lineTo(1, 4); ctx.lineTo(-1, 4);
           ctx.closePath(); ctx.fill();
           break;
         }
         case 'POISON': {
-          ctx.beginPath(); ctx.arc(0, 0, b.r || 4, 0, Math.PI * 2); ctx.fill();
-          ctx.globalAlpha = 0.3; ctx.fillRect(-4, -4, 8, 8); ctx.globalAlpha = 1;
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.beginPath();
+          ctx.moveTo(0, -5);
+          ctx.bezierCurveTo(3, -2, 3, 4, 0, 5);
+          ctx.bezierCurveTo(-3, 4, -3, -2, 0, -5);
+          ctx.fill();
           break;
         }
         default: {
@@ -207,6 +215,19 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
         ctx.globalAlpha = Math.max(0, p.a ?? 0.6);
         ctx.strokeStyle = p.color || '#94a3b8';
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.stroke();
+      } else if (p.circle) {
+        ctx.globalAlpha = Math.max(0, p.a ?? 0.6);
+        ctx.fillStyle = p.color || '#94a3b8';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      } else if (p.spark) {
+        ctx.globalAlpha = Math.max(0, p.a ?? 1);
+        ctx.strokeStyle = p.color || '#94a3b8';
+        ctx.lineWidth = 2;
+        const len = p.len || 6;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + Math.cos(p.ang || 0) * len, p.y + Math.sin(p.ang || 0) * len);
+        ctx.stroke();
       } else {
         ctx.globalAlpha = Math.max(0, p.a ?? 1);
         ctx.fillStyle = p.color || '#94a3b8';
