@@ -4,6 +4,7 @@
 import { cellCenterForMap } from './map.js';
 import { astar } from './pathfinding.js';
 import { tickStatusesAndCombos } from './combat.js';
+import { acquireParticle } from './particles.js';
 
 export function recomputePathingForAll(state, isBlocked) {
   const { start, end, size } = state.map;
@@ -44,6 +45,7 @@ export function cullDead(state, { onKill }) {
       if (c.hp <= 0) {
         state.gold += c.gold;
         state.score += 3;
+        spawnDeathParticles(state, c);
         onKill?.(c);
       }
       state.creeps.splice(i, 1);
@@ -58,4 +60,21 @@ function toCell(state, x, y) {
   const gx = Math.max(0, Math.min(cols - 1, Math.floor(x / TILE)));
   const gy = Math.max(0, Math.min(rows - 1, Math.floor(y / TILE)));
   return { gx, gy };
+}
+
+function spawnDeathParticles(state, c) {
+  const rng = state.rng;
+  const ttl = 0.4;
+  const color = '#e5e7eb';
+  function add(props) {
+    const p = acquireParticle();
+    Object.assign(p, props);
+    state.particles.push(p);
+  }
+  add({ x: c.x, y: c.y, r: 0, vr: 40, ttl, max: ttl, a: 1, color, ring: true });
+  for (let n = 0; n < 6; n++) {
+    const ang = rng() * Math.PI * 2;
+    const sp = 60 * (0.5 + rng());
+    add({ x: c.x, y: c.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, ttl, max: ttl, a: 1, color });
+  }
 }
