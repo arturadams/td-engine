@@ -12,7 +12,8 @@ export function recomputePathingForAll(state, isBlocked) {
   state.pathPx = state.path.map(n => cellCenterForMap(state.map, n.x, n.y));
   for (const c of state.creeps) {
     const startCell = toCell(state, c.x, c.y);
-    const npcPath = astar({ x: startCell.gx, y: startCell.gy }, end, isBlocked, size.cols, size.rows);
+    const blocker = (gx, gy) => (gx === startCell.gx && gy === startCell.gy) ? false : isBlocked(gx, gy);
+    const npcPath = astar({ x: startCell.gx, y: startCell.gy }, end, blocker, size.cols, size.rows);
     if (npcPath) { c.path = npcPath.map(n => cellCenterForMap(state.map, n.x, n.y)); c.seg = 0; c.t = 0; }
   }
 }

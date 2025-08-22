@@ -289,8 +289,8 @@ export function createEngine(seedState) {
             gold: base.gold,
             status: {},
             alive: true,
-            path: (state.pathPx && state.pathPx.length >= 2)
-                ? [...state.pathPx]
+            path: (state.path && state.path.length >= 2)
+                ? [...state.path]
                 : [startPx, endPx]
         };
 
