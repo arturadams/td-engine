@@ -4,8 +4,10 @@ import { TILE, GRID_W, GRID_H, COST, EltColor } from '../../packages/core/conten
 import { buildHudSnapshot, buildTowerDetailsModel } from '../../packages/core/selectors.js';
 import { attachViewportFit } from './viewport-fit.js';
 import { twistMap } from '../../maps/twist-24x16.js';
+import { attachSfx } from '../../packages/audio/index.js';
 
 const engine = createEngine();
+attachSfx(engine);
 const canvas = document.getElementById('game');
 canvas.style.touchAction = 'none';
 const { fit } = attachViewportFit(canvas, {
