@@ -1,5 +1,4 @@
 // packages/core/engine.js
-// Adds loadMap() & getMapInfo(), and routes pathing/placement through map
 
 import { createInitialState, resetState } from './state.js';
 import { Elt, BLUEPRINT, COST, UPG_COST, TREES, UNLOCK_TIERS, TILE } from './content.js';
@@ -81,11 +80,11 @@ export function createEngine(seedState) {
             synergy: 0, novaTimer: 0, kills: 0, freeTierPicks: 0,
         };
         state.towers.push(t);
-        onGoldChange(-cost, 'place_tower');       // <-- instead of state.gold -= cost + emitter
+        onGoldChange(-cost, 'place_tower');
         state.selectedTowerId = t.id;
         neighborsSynergy();
         recomputePathingForAll(state, isBlocked);
-        onTowerPlace(t, cost);                    // <-- semantic event
+        onTowerPlace(t, cost);
         return { ok: true, tower: t };
     }
 
@@ -122,7 +121,7 @@ export function createEngine(seedState) {
         const t = state.towers.find(tt => tt.id === state.selectedTowerId); if (!t) return false;
         const cost = UPG_COST(t.lvl); if (state.gold < cost) return false;
 
-        onGoldChange(-cost, 'level_up');     // <-- spend gold via notifier
+        onGoldChange(-cost, 'level_up');
         const prev = t.lvl;
         t.lvl++;
         t.spent += cost;
@@ -134,7 +133,7 @@ export function createEngine(seedState) {
         if (owed > 0) t.freeTierPicks = credits + owed;
 
         neighborsSynergy();
-        onTowerLevel(t, prev, t.lvl, cost);  // <-- semantic
+        onTowerLevel(t, prev, t.lvl, cost);
         return true;
     }
 
@@ -194,7 +193,7 @@ export function createEngine(seedState) {
         if (state.paused || state.gameOver) return;
         state.dt = dt;
 
-        waves.stepSpawner();
+        waves.stepSpawner(dt);
 
         for (const c of state.creeps) {
             advanceCreep(state, c, () => {
@@ -264,8 +263,7 @@ export function createEngine(seedState) {
     }
 
     function spawnCreep(type, hpMul) {
-        // Example spawn logic—use your actual profiles/utilities here
-        const base = state.creepProfiles[type]; // or import a ResistProfiles map
+        const base = state.creepProfiles[type];
         const start = state.map.start;
         const startPx = cellCenterForMap(state.map, start.x, start.y);
         const endPx = cellCenterForMap(state.map, state.map.end.x, state.map.end.y);
@@ -370,7 +368,7 @@ export function createEngine(seedState) {
         recomputePathingForAll(state, isBlocked);
         neighborsSynergy();
         onGameReset();
-        onGoldChange(0);   // notify UI of current value without changing it
+        onGoldChange(0);
         onLifeChange(0);
         onSpeedChange();
         onPauseChange();
