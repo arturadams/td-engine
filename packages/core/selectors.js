@@ -31,7 +31,8 @@ export function buildTowerDetailsModel(state, TREES, UNLOCK_TIERS, UPG_COST) {
     dmg, firerate: t.firerate.toFixed(2), range: Math.round(t.range),
     kills: t.kills || 0,
     canUpgrade, upgCost: UPG_COST(t.lvl), sellGold: Math.floor(t.spent * 0.8),
-    nextTierIndex: tierIdx, choices
+    nextTierIndex: tierIdx, choices,
+    targeting: t.targeting || 'first',
   };
 
   function nextAvailableTier(t) {

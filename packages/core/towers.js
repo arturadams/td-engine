@@ -3,13 +3,43 @@ import { EltColor, Status } from './content.js';
 import { takeDamage, applyStatus } from './combat.js';
 
 export function targetInRange(state, t) {
-    let best = null, bestProg = -1;
-    for (const c of state.creeps) {
-        if (!c.alive) continue;
-        const d = Math.hypot(c.x - t.x, c.y - t.y);
-        if (d <= t.range) {
-            const prog = c.seg + c.t;
-            if (prog > bestProg) { best = c; bestProg = prog; }
+    const mode = t.targeting || 'first';
+
+    if (mode === 'cycle') {
+        const inRange = [];
+        for (const c of state.creeps) {
+            if (!c.alive) continue;
+            const d = Math.hypot(c.x - t.x, c.y - t.y);
+            if (d <= t.range) inRange.push(c);
+        }
+        if (!inRange.length) return null;
+        inRange.sort((a, b) => (b.seg + b.t) - (a.seg + a.t));
+        t._cycleIndex = (t._cycleIndex || 0) % inRange.length;
+        const target = inRange[t._cycleIndex];
+        t._cycleIndex = (t._cycleIndex + 1) % inRange.length;
+        return target;
+    }
+
+    let best = null;
+    if (mode === 'last') {
+        let bestProg = Infinity;
+        for (const c of state.creeps) {
+            if (!c.alive) continue;
+            const d = Math.hypot(c.x - t.x, c.y - t.y);
+            if (d <= t.range) {
+                const prog = c.seg + c.t;
+                if (prog < bestProg) { best = c; bestProg = prog; }
+            }
+        }
+    } else {
+        let bestProg = -1;
+        for (const c of state.creeps) {
+            if (!c.alive) continue;
+            const d = Math.hypot(c.x - t.x, c.y - t.y);
+            if (d <= t.range) {
+                const prog = c.seg + c.t;
+                if (prog > bestProg) { best = c; bestProg = prog; }
+            }
         }
     }
     return best;
