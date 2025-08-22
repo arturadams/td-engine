@@ -7,10 +7,25 @@ export const GRID_H = 16;
 export const START = { x: 0, y: 8 };
 export const END = { x: 23, y: 8 };
 
-export const Elt = { FIRE: 'FIRE', ICE: 'ICE', LIGHT: 'LIGHT', POISON: 'POISON' };
+// Base tower identifiers.  Non-elemental towers such as ARCHER and SIEGE are
+// included alongside the elemental types.  The CANNON key is provided as an
+// alias for SIEGE so callers can use either term.
+export const Elt = {
+  FIRE: 'FIRE',
+  ICE: 'ICE',
+  LIGHT: 'LIGHT',
+  POISON: 'POISON',
+  ARCHER: 'ARCHER',
+  SIEGE: 'SIEGE',
+  CANNON: 'SIEGE',
+};
 export const Status = { BURN: 'BURN', CHILL: 'CHILL', SHOCK: 'SHOCK', POISON: 'POISON' };
 
+// Tower definitions used to derive helpers like EltColor, EltType and
+// EltStatus.  Non-elemental towers simply omit a status effect.
 export const ELEMENTS = [
+  { key: 'ARCHER', color: '#9ca3af', type: 'bolt' },
+  { key: 'SIEGE', color: '#f59e0b', type: 'siege' },
   { key: 'FIRE', color: '#ef4444', type: 'splash', status: Status.BURN },
   { key: 'ICE', color: '#38bdf8', type: 'bolt', status: Status.CHILL },
   { key: 'LIGHT', color: '#a78bfa', type: 'chain', status: Status.SHOCK },
@@ -21,7 +36,15 @@ export const EltColor = Object.fromEntries(ELEMENTS.map(e => [e.key, e.color]));
 export const EltType = Object.fromEntries(ELEMENTS.map(e => [e.key, e.type]));
 export const EltStatus = Object.fromEntries(ELEMENTS.map(e => [e.key, e.status]));
 
-export const COST = { FIRE: 70, ICE: 70, LIGHT: 90, POISON: 75 };
+// Base towers are cheaper while elemental towers command a premium.
+export const COST = {
+  ARCHER: 40,
+  SIEGE: 60,
+  FIRE: 70,
+  ICE: 70,
+  LIGHT: 90,
+  POISON: 75,
+};
 export const UPG_COST = (lvl) => 80 + lvl * 45;
 export const UNLOCK_TIERS = [2, 4, 6];
 //export const EVO_COST = tier => [120, 220, 400][tier] || 500;
@@ -35,6 +58,8 @@ export const ResistProfiles = {
 };
 
 export const BLUEPRINT = {
+  ARCHER: { range: 110, firerate: 1.0, dmg: 7, type: 'bolt' },
+  SIEGE: { range: 120, firerate: 0.6, dmg: 20, type: 'siege' },
   FIRE: { range: 120, firerate: 0.8, dmg: 22, type: 'splash', status: Status.BURN },
   ICE: { range: 130, firerate: 0.95, dmg: 12, type: 'bolt', status: Status.CHILL },
   LIGHT: { range: 140, firerate: 0.7, dmg: 18, type: 'chain', status: Status.SHOCK },

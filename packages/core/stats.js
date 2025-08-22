@@ -36,7 +36,9 @@ export function attachStats(engine) {
     });
 
     on('towerPlace', ({ id, elt, cost }) => {
-        ensureTower(id, elt).placedAt = performance.now();
+        const t = ensureTower(id, elt);
+        t.placedAt = performance.now();
+        t.cost = cost || 0;
         stats.totals.goldSpent += cost || 0;
     });
 
@@ -147,7 +149,7 @@ export function attachStats(engine) {
     }
     function freshWave(wave) { return { wave, kills: 0, leaks: 0, rewardGold: 0, durationMs: 0, combos: 0, creepsSpawned: 0 }; }
     function ensureTower(id, elt) {
-        const t = (stats.towers[id] ||= { id, elt: elt || null, placedAt: 0, soldAt: 0, levelUps: 0, finalLevel: 1, evolutions: [], shots: 0, hits: 0, damage: 0, damageByElt: {}, refund: 0 });
+        const t = (stats.towers[id] ||= { id, elt: elt || null, placedAt: 0, soldAt: 0, levelUps: 0, finalLevel: 1, evolutions: [], shots: 0, hits: 0, damage: 0, damageByElt: {}, refund: 0, cost: 0 });
         if (elt && !t.elt) t.elt = elt;
         return t;
     }
