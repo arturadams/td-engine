@@ -160,10 +160,15 @@ wirePaletteButtons(document);
 // Hotkeys
 window.addEventListener('keydown', (e) => {
   let changed = false;
-  if (e.code === 'Digit1') { engine.setBuild('FIRE'); changed = true; }
-  if (e.code === 'Digit2') { engine.setBuild('ICE'); changed = true; }
-  if (e.code === 'Digit3') { engine.setBuild('LIGHT'); changed = true; }
-  if (e.code === 'Digit4') { engine.setBuild('POISON'); changed = true; }
+  if (e.code === 'Digit1') { engine.setBuild('ARCHER'); changed = true; }
+  if (e.code === 'Digit2') { engine.setBuild('SIEGE'); changed = true; }
+  if (e.code === 'Digit3') { engine.setBuild('FIRE'); changed = true; }
+  if (e.code === 'Digit4') { engine.setBuild('ICE'); changed = true; }
+  if (e.code === 'Digit5') { engine.setBuild('LIGHT'); changed = true; }
+  if (e.code === 'Digit6') { engine.setBuild('POISON'); changed = true; }
+  if (e.code === 'Digit7') { engine.setBuild('EARTH'); changed = true; }
+  if (e.code === 'Digit8') { engine.setBuild('WIND'); changed = true; }
+  if (e.code === 'Digit9') { engine.setBuild('ARCANE'); changed = true; }
   if (e.code === 'Space') engine.startWave();
   if (e.code === 'KeyP') engine.setPaused(!engine.state.paused);
   if (e.code === 'KeyF') engine.toggleFast();

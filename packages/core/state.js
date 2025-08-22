@@ -27,7 +27,7 @@ export function createInitialState(seedState) {
         autoWaveDelay: 1200,
         _autoWaveTimer: -1,
 
-        buildSel: Elt.FIRE,
+        buildSel: Elt.ARCHER,
 
         towers: [],
         creeps: [],
