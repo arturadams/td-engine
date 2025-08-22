@@ -45,7 +45,8 @@ function handleMeteors(state, { onHit, onCreepDamage }, t, dt) {
 function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
     const dx = target.x - t.x, dy = target.y - t.y;
     const dist = Math.hypot(dx, dy);
-    const speed = 480;
+    let speed = 480;
+    if (t.elt === 'ICE') speed = 360;
     // create a visual bullet
     state.bullets.push({
         kind: 'bolt',
@@ -55,6 +56,7 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
         ttl: dist / speed,
         color: EltColor[t.elt],
         fromId: t.id,
+        elt: t.elt,
     });
 
     const hit = state.rng() < acc; if (hit) { state.hits++; onHit?.(t.id); }
@@ -111,6 +113,7 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
             vy: (dy / dist) * speed,
             ttl: dist / speed,
             color: EltColor[t.elt],
+            elt: t.elt,
         });
 
         takeDamage(next, dmg * 0.6, t.elt, next.status.resShred || 0);
