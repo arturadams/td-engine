@@ -5,4 +5,6 @@ export const elements = {
   POISON:{ color:"#22c55e", status:"POISON" },
   EARTH: { color:"#a3a3a3", status:"BRITTLE" },
   WIND:  { color:"#60a5fa", status:"EXPOSED" },
+  WATER: { color:"#0ea5e9", status:"SOAK" },
+  DARK:  { color:"#4b5563", status:"CURSE" },
 };
