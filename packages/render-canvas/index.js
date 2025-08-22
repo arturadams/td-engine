@@ -139,15 +139,18 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       if (t.ghost) continue;
       ctx.save();
       ctx.translate(t.x, t.y);
-      ctx.fillStyle = EltColor[t.elt];
-      ctx.shadowColor = EltColor[t.elt]; ctx.shadowBlur = 16;
+      const elt = t.elt || t.kind;
+      const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
+      const color = EltColor[elt] || extraColors[elt] || '#94a3b8';
+      ctx.fillStyle = color;
+      ctx.shadowColor = color; ctx.shadowBlur = 16;
       ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
       ctx.shadowBlur = 0;
 
       // range ring if selected
       if (state.selectedTowerId === t.id) {
         ctx.globalAlpha = 0.25;
-        ctx.strokeStyle = EltColor[t.elt];
+        ctx.strokeStyle = color;
         ctx.beginPath(); ctx.arc(0, 0, t.range, 0, Math.PI * 2); ctx.stroke();
         ctx.globalAlpha = 1;
       }
@@ -164,8 +167,10 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     for (const b of state.bullets) {
       ctx.save();
       ctx.translate(b.x, b.y);
-      ctx.fillStyle = b.color || '#94a3b8';
-      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
+      const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
+      const color = b.color || EltColor[b.elt] || extraColors[b.elt] || '#94a3b8';
+      ctx.fillStyle = color;
+      ctx.shadowColor = color; ctx.shadowBlur = 12;
 
       switch (b.elt) {
         case 'FIRE': {
@@ -197,6 +202,28 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
           ctx.bezierCurveTo(3, -2, 3, 4, 0, 5);
           ctx.bezierCurveTo(-3, 4, -3, -2, 0, -5);
           ctx.fill();
+          break;
+        }
+        case 'ARCHER': {
+          const ang = Math.atan2(b.vy, b.vx);
+          ctx.rotate(ang);
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(6, 0);
+          ctx.lineTo(2, -3);
+          ctx.moveTo(6, 0);
+          ctx.lineTo(2, 3);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(-6, 0, 2, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        case 'CANNON':
+        case 'SIEGE': {
+          ctx.beginPath(); ctx.arc(0, 0, b.r || 5, 0, Math.PI * 2); ctx.fill();
           break;
         }
         default: {
