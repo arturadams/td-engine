@@ -3,7 +3,7 @@
 
 import { createDefaultMap, cellCenterForMap } from './map.js';
 import { makeRng } from './rng.js';
-import { Elt, ResistProfiles } from './content.js';
+import { Elt, ResistProfiles, ResistProfiles } from './content.js';
 
 export function createInitialState(seedState) {
     const rng = makeRng(seedState?.seed ?? undefined);
