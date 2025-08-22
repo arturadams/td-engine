@@ -50,11 +50,20 @@ export function createEngine(seedState) {
         if (gx === end.x && gy === end.y) return false;
         if (!canBuildCell(gx, gy)) return false;
         if (state.towers.some(t => t.gx === gx && t.gy === gy)) return false;
-        // simulate and ensure path exists
-        state.towers.push({ gx, gy, ghost: true });
-        const p = astar(state.map.start, state.map.end, isBlocked, state.map.size.cols, state.map.size.rows);
-        state.towers.pop();
-        return !!p;
+        const cached = state.path;
+        const onPath = cached?.some(n => n.x === gx && n.y === gy);
+        if (!cached || !cached.length || onPath) {
+            const p = astar(
+                state.map.start,
+                state.map.end,
+                (x, y) => (x === gx && y === gy) || isBlocked(x, y),
+                state.map.size.cols,
+                state.map.size.rows,
+            );
+            return !!p;
+        }
+        // tile not on cached path; existing path remains valid
+        return true;
     }
 
     function placeTower(gx, gy, elt) {
