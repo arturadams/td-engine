@@ -6,6 +6,7 @@ import { attachViewportFit } from './viewport-fit.js';
 import { twistMap } from '../../maps/twist-24x16.js';
 
 const engine = createEngine();
+// attachSfx(engine); // use it once I get cool sound effects on the hooks
 const canvas = document.getElementById('game');
 canvas.style.touchAction = 'none';
 const { fit } = attachViewportFit(canvas, {
