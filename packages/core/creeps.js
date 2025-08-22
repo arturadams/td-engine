@@ -8,8 +8,7 @@ import { tickStatusesAndCombos } from './combat.js';
 export function recomputePathingForAll(state, isBlocked) {
   const { start, end, size } = state.map;
   const p = astar(start, end, isBlocked, size.cols, size.rows);
-  state.path = p || [start, end];
-  state.pathPx = state.path.map(n => cellCenterForMap(state.map, n.x, n.y));
+  state.path = p ? p.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
   for (const c of state.creeps) {
     const startCell = toCell(state, c.x, c.y);
     const blocker = (gx, gy) => (gx === startCell.gx && gy === startCell.gy) ? false : isBlocked(gx, gy);
