@@ -7,14 +7,40 @@ export const GRID_H = 16;
 export const START = { x: 0, y: 8 };
 export const END = { x: 23, y: 8 };
 
-export const Elt = { FIRE: 'FIRE', ICE: 'ICE', LIGHT: 'LIGHT', POISON: 'POISON' };
-export const Status = { BURN: 'BURN', CHILL: 'CHILL', SHOCK: 'SHOCK', POISON: 'POISON' };
+export const Elt = {
+  FIRE: 'FIRE',
+  ICE: 'ICE',
+  LIGHT: 'LIGHT',
+  POISON: 'POISON',
+  ARCHER: 'ARCHER',
+  SIEGE: 'SIEGE',
+  CANNON: 'SIEGE',
+  EARTH: 'EARTH',
+  WIND: 'WIND',
+  ARCANE: 'ARCANE'
+};
+export const Status = {
+  BURN: 'BURN',
+  CHILL: 'CHILL',
+  SHOCK: 'SHOCK',
+  POISON: 'POISON',
+  BRITTLE: 'BRITTLE',
+  EXPOSED: 'EXPOSED',
+  MANA_BURN: 'MANA_BURN'
+};
 
+// Tower definitions used to derive helpers like EltColor, EltType and
+// EltStatus.  Non-elemental towers simply omit a status effect.
 export const ELEMENTS = [
+  { key: 'ARCHER', color: '#9ca3af', type: 'bolt' },
+  { key: 'SIEGE', color: '#f59e0b', type: 'siege' },
   { key: 'FIRE', color: '#ef4444', type: 'splash', status: Status.BURN },
   { key: 'ICE', color: '#38bdf8', type: 'bolt', status: Status.CHILL },
   { key: 'LIGHT', color: '#a78bfa', type: 'chain', status: Status.SHOCK },
   { key: 'POISON', color: '#22c55e', type: 'bolt', status: Status.POISON },
+  { key: 'EARTH', color: '#a3a3a3', type: 'splash', status: Status.BRITTLE },
+  { key: 'WIND', color: '#60a5fa', type: 'bolt', status: Status.EXPOSED },
+  { key: 'ARCANE', color: '#be123c', type: 'bolt', status: Status.MANA_BURN }
 ];
 
 export const EltColor = Object.fromEntries(ELEMENTS.map(e => [e.key, e.color]));
@@ -23,15 +49,6 @@ export const EltStatus = Object.fromEntries(ELEMENTS.map(e => [e.key, e.status])
 
 // Non-elemental/basic towers that don't inflict statuses
 export const BASIC_TOWERS = ['ARCHER', 'CANNON'];
-
-export const COST = {
-  ARCHER: 50,
-  CANNON: 60,
-  FIRE: 100,
-  ICE: 100,
-  LIGHT: 120,
-  POISON: 110,
-};
 
 // Upgrade cost now varies by tower category; `elt` is optional for backwards compat
 export const UPG_COST = (lvl, elt) => {
@@ -49,15 +66,67 @@ export const UPGRADE_MULT = {
 
 export const REFUND_RATE = { basic: 0.8, elemental: 0.75 };
 
+export const COST = {
+  ARCHER: 50,
+  SIEGE: 65,
+  FIRE: 90,
+  ICE: 90,
+  LIGHT: 110,
+  POISON: 95,
+  EARTH: 100,
+  WIND: 100,
+  ARCANE: 120
+};
 export const UNLOCK_TIERS = [2, 4, 6];
 //export const EVO_COST = tier => [120, 220, 400][tier] || 500;
 
 export const ResistProfiles = {
-  Grunt: { hp: 95, speed: 40, resist: { FIRE: 0.1, ICE: 0, LIGHT: 0, POISON: 0 }, gold: 8 },
-  Runner: { hp: 70, speed: 70, resist: { FIRE: 0, ICE: 0.1, LIGHT: 0, POISON: 0 }, gold: 7 },
-  Tank: { hp: 230, speed: 28, resist: { FIRE: 0.15, ICE: 0.15, LIGHT: 0.15, POISON: 0.15 }, gold: 16 },
-  Shield: { hp: 120, speed: 42, resist: { FIRE: 0.25, ICE: 0.1, LIGHT: 0.25, POISON: 0 }, gold: 10 },
-  Boss: { hp: 1400, speed: 36, resist: { FIRE: 0.2, ICE: 0.2, LIGHT: 0.2, POISON: 0.2 }, gold: 90 },
+  Grunt: {
+    hp: 95,
+    speed: 40,
+    resist: { FIRE: 0.1, ICE: 0, LIGHT: 0, POISON: 0, EARTH: 0, WIND: 0, ARCANE: 0 },
+    gold: 8
+  },
+  Runner: {
+    hp: 70,
+    speed: 70,
+    resist: { FIRE: 0, ICE: 0.1, LIGHT: 0, POISON: 0, EARTH: 0, WIND: 0, ARCANE: 0 },
+    gold: 7
+  },
+  Tank: {
+    hp: 230,
+    speed: 28,
+    resist: {
+      FIRE: 0.15,
+      ICE: 0.15,
+      LIGHT: 0.15,
+      POISON: 0.15,
+      EARTH: 0.15,
+      WIND: 0.15,
+      ARCANE: 0.15
+    },
+    gold: 16
+  },
+  Shield: {
+    hp: 120,
+    speed: 42,
+    resist: { FIRE: 0.25, ICE: 0.1, LIGHT: 0.25, POISON: 0, EARTH: 0.2, WIND: 0.2, ARCANE: 0 },
+    gold: 10
+  },
+  Boss: {
+    hp: 1400,
+    speed: 36,
+    resist: {
+      FIRE: 0.2,
+      ICE: 0.2,
+      LIGHT: 0.2,
+      POISON: 0.2,
+      EARTH: 0.2,
+      WIND: 0.2,
+      ARCANE: 0.2
+    },
+    gold: 90
+  }
 };
 
 export const BLUEPRINT = {
@@ -67,6 +136,9 @@ export const BLUEPRINT = {
   ICE: { range: 130, firerate: 0.95, dmg: 12, type: 'bolt', status: Status.CHILL },
   LIGHT: { range: 140, firerate: 0.7, dmg: 18, type: 'chain', status: Status.SHOCK },
   POISON: { range: 120, firerate: 1.0, dmg: 8, type: 'bolt', status: Status.POISON },
+  EARTH: { range: 135, firerate: 0.9, dmg: 22, type: 'splash', status: Status.BRITTLE },
+  WIND: { range: 160, firerate: 0.65, dmg: 16, type: 'bolt', status: Status.EXPOSED },
+  ARCANE: { range: 145, firerate: 0.75, dmg: 18, type: 'bolt', status: Status.MANA_BURN }
 };
 
 export const TREES = {

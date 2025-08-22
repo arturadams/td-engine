@@ -3,4 +3,6 @@ export const combos = [
   { when:["CHILL","SHOCK"], effect:"SHATTER" },
   { when:["POISON","SHOCK"], effect:"NEUROSHOCK" },
   { when:["BRITTLE","BURN"], effect:"GLASSFIRE" },
+  { when:["EXPOSED","BURN"], effect:"FANNED_FLAMES" },
+  { when:["MANA_BURN","SHOCK"], effect:"OVERLOAD" },
 ];
