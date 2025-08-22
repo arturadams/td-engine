@@ -75,7 +75,8 @@ function handleMeteors(state, { onHit, onCreepDamage }, t, dt) {
 function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
     const dx = target.x - t.x, dy = target.y - t.y;
     const dist = Math.hypot(dx, dy);
-    const speed = 480;
+    let speed = 480;
+    if (t.elt === 'ICE') speed = 360;
     // create a visual bullet
     state.bullets.push({
         kind: 'bolt',
