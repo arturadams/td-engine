@@ -67,7 +67,10 @@ export function createEngine(seedState) {
         return true;
     }
 
-    function placeTower(gx, gy, elt) {
+    const normalizeElt = (e) => (e === Elt.CANNON ? Elt.SIEGE : e);
+
+    function placeTower(gx, gy, rawElt) {
+        const elt = normalizeElt(rawElt);
         if (!inBounds(gx, gy)) return { ok: false, reason: 'oob' };
         if (state.towers.some(t => t.gx === gx && t.gy === gy)) return { ok: false, reason: 'occupied' };
         const { start, end } = state.map;
@@ -77,9 +80,10 @@ export function createEngine(seedState) {
         if (!canPlace(gx, gy)) return { ok: false, reason: 'blocks_path' };
 
         const cost = COST[elt];
+        const bp = BLUEPRINT[elt];
+        if (cost == null || !bp) return { ok: false, reason: 'invalid_tower' };
         if (state.gold < cost) return { ok: false, reason: 'gold' };
 
-        const bp = BLUEPRINT[elt];
         const t = {
             id: uuid(), gx, gy,
             x: gx * TILE + TILE / 2, y: gy * TILE + TILE / 2,
@@ -115,7 +119,7 @@ export function createEngine(seedState) {
         return true;
     }
 
-    function setBuild(elt) { state.buildSel = elt; }
+    function setBuild(elt) { state.buildSel = normalizeElt(elt); }
 
     function setHover(gx, gy) {
         state.hover.gx = gx; state.hover.gy = gy;

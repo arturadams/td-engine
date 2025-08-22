@@ -178,10 +178,35 @@ function splashStrategy(state, { onShot }, t, target, dmg) {
     t.cooldown = 1 / t.firerate;
 }
 
+// Siege/cannon towers lob heavy projectiles with a wider explosion radius
+// and slower travel speed than standard splash towers.
+function siegeStrategy(state, { onShot }, t, target, dmg) {
+    const dx = target.x - t.x, dy = target.y - t.y;
+    const dist = Math.hypot(dx, dy);
+    const speed = 180; // slower projectile
+    state.bullets.push({
+        kind: 'splash',
+        x: t.x, y: t.y,
+        vx: (dx / dist) * speed,
+        vy: (dy / dist) * speed,
+        ttl: dist / speed,
+        aoe: 50 + (t.mod.splash ? 24 : 0),
+        color: EltColor[t.elt],
+        fromId: t.id,
+        elt: t.elt,
+        status: t.status,
+        dmg,
+    });
+    state.shots++;
+    onShot?.(t.id);
+    t.cooldown = 1 / t.firerate;
+}
+
 const STRATEGIES = {
     bolt: boltStrategy,
     chain: chainStrategy,
     splash: splashStrategy,
+    siege: siegeStrategy,
 };
 
 export function fireTower(state, callbacks, t, dt) {

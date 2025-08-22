@@ -8,12 +8,13 @@ export const START = { x: 0, y: 8 };
 export const END = { x: 23, y: 8 };
 
 export const Elt = {
-  ARCHER: 'ARCHER',
-  SIEGE: 'SIEGE',
   FIRE: 'FIRE',
   ICE: 'ICE',
   LIGHT: 'LIGHT',
   POISON: 'POISON',
+  ARCHER: 'ARCHER',
+  SIEGE: 'SIEGE',
+  CANNON: 'SIEGE',
   EARTH: 'EARTH',
   WIND: 'WIND',
   ARCANE: 'ARCANE'
@@ -28,9 +29,11 @@ export const Status = {
   MANA_BURN: 'MANA_BURN'
 };
 
+// Tower definitions used to derive helpers like EltColor, EltType and
+// EltStatus.  Non-elemental towers simply omit a status effect.
 export const ELEMENTS = [
-  { key: 'ARCHER', color: '#d4d4d8', type: 'bolt', status: null },
-  { key: 'SIEGE', color: '#a1a1aa', type: 'splash', status: null },
+  { key: 'ARCHER', color: '#9ca3af', type: 'bolt' },
+  { key: 'SIEGE', color: '#f59e0b', type: 'siege' },
   { key: 'FIRE', color: '#ef4444', type: 'splash', status: Status.BURN },
   { key: 'ICE', color: '#38bdf8', type: 'bolt', status: Status.CHILL },
   { key: 'LIGHT', color: '#a78bfa', type: 'chain', status: Status.SHOCK },
