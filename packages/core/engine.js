@@ -354,7 +354,28 @@ export function createEngine(seedState) {
 
     // ---- Notifiers -----------------------------------------------------------
     function onGameReset() { fire('gameReset', {}); }
-    function onGameOver() { fire('gameOver', { wave: state.wave, lives: state.lives, gold: state.gold }); }
+    function onGameOver() {
+        const summary = engine.stats?.summary?.() || {};
+        const totals = summary.totals || {};
+        const creeps = totals.creeps || {};
+        let top = null;
+        for (const t of state.towers) {
+            if (!top || (t.kills || 0) > (top.kills || 0)) top = t;
+        }
+        fire('gameOver', {
+            wave: state.wave,
+            lives: state.lives,
+            gold: state.gold,
+            score: state.score,
+            wavesCleared: totals.wavesCleared || 0,
+            leaks: creeps.leaked || 0,
+            combos: totals.combos || 0,
+            spree: state.spree,
+            accuracy: totals.accuracy || 0,
+            topKillerTowerId: top?.id || null,
+            topKillerKills: top?.kills || 0,
+        });
+    }
     function onMapChange(mapInfo) { fire('mapChange', mapInfo); }
     function onWaveStart() { fire('waveStart', { wave: state.wave }); }
     function onWaveEnd(reward) { fire('waveEnd', { wave: state.wave, reward }); }
