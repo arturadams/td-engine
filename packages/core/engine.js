@@ -1,25 +1,23 @@
 // packages/core/engine.js
 // Adds loadMap() & getMapInfo(), and routes pathing/placement through map
 
-import { createEmitter } from './events.js';
 import { createInitialState, resetState } from './state.js';
 import { Elt, BLUEPRINT, COST, UPG_COST, TREES, UNLOCK_TIERS, TILE } from './content.js';
-import { waveConfig, createWaveController } from './waves.js';
+import { defaultWaveConfig, createWaveController } from './waves.js';
 import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
 import { updateBullets } from './bullets.js';
 import { astar } from './pathfinding.js';
 import { uuid } from './rng.js';
-import { validateMap, createDefaultMap, makeBuildableChecker, cellCenterForMap } from './map.js';
-import { createStats } from './stats.js';
+import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
+import { attachStats } from './stats.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export function createEngine(seedState) {
-    const emitter = createEmitter();
+    const engine = {};
+
     const state = createInitialState(seedState);
-    const stats = createStats(emitter);
-    engine.stats = stats; // expose for UI
 
     // map helpers (bound to current state.map)
     const inBounds = (gx, gy) =>
@@ -69,7 +67,9 @@ export function createEngine(seedState) {
         if (!canBuildCell(gx, gy)) return { ok: false, reason: 'not_buildable' };
         if (!canPlace(gx, gy)) return { ok: false, reason: 'blocks_path' };
 
-        const cost = COST[elt]; if (state.gold < cost) return { ok: false, reason: 'gold' };
+        const cost = COST[elt];
+        if (state.gold < cost) return { ok: false, reason: 'gold' };
+
         const bp = BLUEPRINT[elt];
         const t = {
             id: uuid(), gx, gy,
@@ -80,9 +80,12 @@ export function createEngine(seedState) {
             mod: { dmg: 0, burn: 0, poison: 0, chill: 0, slowDur: 0, chainBounce: 0, chainRange: 0, stun: 0, aoe: 0, splash: 0, nova: false, resShred: 0, maxStacks: 1, pierce: 0 },
             synergy: 0, novaTimer: 0, kills: 0, freeTierPicks: 0,
         };
-        state.towers.push(t); state.gold -= cost; state.selectedTowerId = t.id;
-        neighborsSynergy(); recomputePathingForAll(state, isBlocked);
-        emitter.emit({ type: 'gold.change', gold: state.gold });
+        state.towers.push(t);
+        onGoldChange(-cost, 'place_tower');       // <-- instead of state.gold -= cost + emitter
+        state.selectedTowerId = t.id;
+        neighborsSynergy();
+        recomputePathingForAll(state, isBlocked);
+        onTowerPlace(t, cost);                    // <-- semantic event
         return { ok: true, tower: t };
     }
 
@@ -90,11 +93,15 @@ export function createEngine(seedState) {
         const idx = state.towers.findIndex(t => t.id === id);
         if (idx < 0) return false;
         const t = state.towers[idx];
-        state.gold += Math.floor(t.spent * 0.8);
+        const refund = Math.floor(t.spent * 0.8);
         state.towers.splice(idx, 1);
         if (state.selectedTowerId === id) state.selectedTowerId = null;
-        neighborsSynergy(); recomputePathingForAll(state, isBlocked);
-        emitter.emit({ type: 'gold.change', gold: state.gold });
+
+        neighborsSynergy();
+        recomputePathingForAll(state, isBlocked);
+
+        onGoldChange(+refund, 'sell_tower');
+        onTowerSell(t, refund);
         return true;
     }
 
@@ -114,14 +121,20 @@ export function createEngine(seedState) {
     function levelUpSelected() {
         const t = state.towers.find(tt => tt.id === state.selectedTowerId); if (!t) return false;
         const cost = UPG_COST(t.lvl); if (state.gold < cost) return false;
-        state.gold -= cost; t.lvl++; t.spent += cost;
+
+        onGoldChange(-cost, 'level_up');     // <-- spend gold via notifier
+        const prev = t.lvl;
+        t.lvl++;
+        t.spent += cost;
         t.dmg *= 1.12; t.firerate *= 1.04; t.range += 4;
+
         const unlocked = UNLOCK_TIERS.filter(u => t.lvl >= u).length;
         const credits = t.freeTierPicks || 0;
         const owed = Math.max(0, unlocked - (t.tree.length + credits));
         if (owed > 0) t.freeTierPicks = credits + owed;
+
         neighborsSynergy();
-        emitter.emit({ type: 'gold.change', gold: state.gold });
+        onTowerLevel(t, prev, t.lvl, cost);  // <-- semantic
         return true;
     }
 
@@ -138,24 +151,29 @@ export function createEngine(seedState) {
         return true;
     }
 
+    const awardWaveGold = (amount) => onGoldChange(+amount, 'wave_end_reward');
     // waves controller
-    const waves = createWaveController(state, emitter, isBlocked);
+    const waves = createWaveController(state, {
+        getWavePacks: defaultWaveConfig, // or your custom waveConfig
+        spawnCreep,
+        onWaveStart: () => onWaveStart(),
+        onWaveEnd: (reward) => onWaveEnd(reward),
+        awardWaveGold,
+    });
 
-    // pause/speed
     function setPaused(v) {
         const next = !!v;
         if (state.paused !== next) {
             state.paused = next;
-            emitter.emit({ type: 'pause.change', paused: state.paused });
+            onPauseChange();
         }
     }
-
     function setSpeed(v) {
         const caps = state.map.rules?.speedCaps ?? [1, 2, 4];
         const allowed = caps.includes(v) ? v : caps[0] || 1;
         if (state.speed !== allowed) {
             state.speed = allowed;
-            emitter.emit({ type: 'speed.change', speed: state.speed });
+            onSpeedChange();
         }
     }
     function cycleSpeed() {
@@ -169,10 +187,9 @@ export function createEngine(seedState) {
         state.autoWaveEnabled = !!enabled;
         if (typeof delayMs === 'number') state.autoWaveDelay = Math.max(0, delayMs);
         if (!state.autoWaveEnabled) state._autoWaveTimer = -1;
-        emitter.emit({ type: 'autowave.change', enabled: state.autoWaveEnabled, delay: state.autoWaveDelay });
+        onAutoWaveChange();
     }
 
-    // main loop
     function step(dt) {
         if (state.paused || state.gameOver) return;
         state.dt = dt;
@@ -181,41 +198,38 @@ export function createEngine(seedState) {
 
         for (const c of state.creeps) {
             advanceCreep(state, c, () => {
-                emitter.emit({ type: 'creep.leak' });
-                emitter.emit({ type: 'life.change', lives: state.lives });
-                if (state.lives <= 0 && !state.gameOver) {
-                    state.gameOver = true; setPaused(true);
-                    emitter.emit({ type: 'game.over', stats: getStats() });
-                }
+                onCreepLeak(c);
+                onLifeChange(-1, 'leak');
             });
             if (c.hp <= 0 && c.alive) { c.alive = false; }
         }
 
-        for (const t of state.towers) { if (!t.ghost) fireTower(state, emitter, t, dt); }
+        for (const t of state.towers) { if (!t.ghost) fireTower(state, { onShot, onHit, onCreepDamage }, t, dt); }
 
-        updateBullets(state, emitter);
+        updateBullets(state, { onCreepDamage });
 
-        cullDead(state, emitter, () => {
-            emitter.emit({ type: 'gold.change', gold: state.gold });
+        cullDead(state, {
+            onKill: (c) => { onCreepKill(c); onGoldChange(+c.gold, 'kill'); },
         });
 
         const canAuto = state.autoWaveEnabled && !state.gameOver && !waves.isSpawning() && state.creeps.length === 0;
         if (canAuto) {
-            if (state._autoWaveTimer < 0) {
-                state._autoWaveTimer = (state.autoWaveDelay || 0) / 1000;
-            } else {
+            if (state._autoWaveTimer < 0) { state._autoWaveTimer = (state.autoWaveDelay || 0) / 1000; }
+            else {
                 state._autoWaveTimer -= dt;
-                if (state._autoWaveTimer <= 0) {
-                    state._autoWaveTimer = -1;
-                    startWave();
-                }
+                if (state._autoWaveTimer <= 0) { state._autoWaveTimer = -1; startWave(); }
             }
         } else {
             state._autoWaveTimer = -1;
         }
     }
 
-    function startWave() { return waves.startWave(); }
+
+    function startWave() {
+        state.wave += 1;
+        onWaveStart();
+        return waves.startWave();
+    }
 
     function _waveStartInternal() {
         state.wave++;
@@ -223,47 +237,62 @@ export function createEngine(seedState) {
     }
     engine._waveStartInternal = _waveStartInternal;
 
-    // map API
     function loadMap(mapConfig) {
         validateMap(mapConfig);
-
-        // apply new map
         state.map = structuredClone(mapConfig);
-
-        // refresh checker for this map
         canBuildCellRef = makeBuildableChecker(state.map);
-
-        // refresh start/end pixel centers
         state.startPx = cellCenterForMap(state.map, state.map.start.x, state.map.start.y);
         state.endPx = cellCenterForMap(state.map, state.map.end.x, state.map.end.y);
 
-        // clamp speed to map caps
         const caps = state.map.rules?.speedCaps ?? [1, 2, 4];
         if (!caps.includes(state.speed)) setSpeed(caps[0] || 1);
-
-        // default autowave
         if (typeof state.map.rules?.autoWaveDefault === 'boolean') {
             state.autoWaveEnabled = state.map.rules.autoWaveDefault;
         }
 
-        // clear selection/hover and recompute path
         state.selectedTowerId = null;
         state.hover = { gx: -1, gy: -1, valid: false };
 
         recomputePathingForAll(state, isBlocked);
-
-        emitter.emit({ type: 'map.change', map: getMapInfo() });
+        onMapChange(getMapInfo());
         return true;
     }
-
 
     function getMapInfo() {
         const { id, name, size, start, end, rules } = state.map;
         return Object.freeze({ id, name, size, start, end, rules });
     }
 
+    function spawnCreep(type, hpMul) {
+        // Example spawn logic—use your actual profiles/utilities here
+        const base = state.creepProfiles[type]; // or import a ResistProfiles map
+        const start = state.map.start;
+        const startPx = cellCenterForMap(state.map, start.x, start.y);
+        const endPx = cellCenterForMap(state.map, state.map.end.x, state.map.end.y);
+
+        const cr = {
+            id: uuid(),
+            type,
+            x: startPx.x, y: startPx.y,
+            seg: 0, t: 0,
+            hp: base.hp * hpMul,
+            maxhp: base.hp * hpMul,
+            speed: base.speed * (1 + Math.max(0, state.wave - 3) * 0.005),
+            resist: { ...base.resist },
+            gold: base.gold,
+            status: {},
+            alive: true,
+            path: (state.pathPx && state.pathPx.length >= 2)
+                ? [...state.pathPx]
+                : [startPx, endPx]
+        };
+
+        state.creeps.push(cr);
+        onCreepSpawn(cr);
+    }
     // ---- Hooks (single event API) --------------------------------------------
     // Central registry: each hook has a Set of subscribers.
+    // ---- Hooks (single event API) --------------------------------------------
     const hooks = {
         gameReset: new Set(),
         gameOver: new Set(),
@@ -272,114 +301,79 @@ export function createEngine(seedState) {
         waveEnd: new Set(),
         lifeChange: new Set(),
         goldChange: new Set(),
-
         towerPlace: new Set(),
         towerSell: new Set(),
         towerLevel: new Set(),
         towerEvo: new Set(),
-
         creepSpawn: new Set(),
         creepKill: new Set(),
         creepLeak: new Set(),
         creepDamage: new Set(),
-
         shot: new Set(),
         hit: new Set(),
+        pauseChange: new Set(),
+        speedChange: new Set(),
+        autoWaveChange: new Set(),
     };
 
-    // Subscribe: engine.hook(name, fn) -> unsubscribe()
     function hook(name, fn) {
         const set = hooks[name];
         if (!set) throw new Error(`Unknown hook: ${name}`);
         set.add(fn);
         return () => set.delete(fn);
     }
-
-    // Internal fanout
     function fire(name, payload) {
         const set = hooks[name];
         if (!set) return;
         for (const fn of set) {
-            try { fn(payload, state); } catch (e) { /* avoid crashing game loop */ }
+            try { fn(payload, state); } catch { /* swallow to keep loop safe */ }
         }
     }
 
     // Make available to consumers
     engine.hook = hook;
 
-    // ---- Notifiers (single points of truth) ----------------------------------
-    function onGameReset() {
-        fire('gameReset', {});
-    }
-    function onGameOver() {
-        fire('gameOver', { wave: state.wave, lives: state.lives, gold: state.gold });
-    }
-    function onMapChange(mapInfo) {
-        fire('mapChange', mapInfo);
-    }
-    function onWaveStart() {
-        fire('waveStart', { wave: state.wave });
-    }
-    function onWaveEnd(reward) {
-        fire('waveEnd', { wave: state.wave, reward });
-    }
-
+    // ---- Notifiers -----------------------------------------------------------
+    function onGameReset() { fire('gameReset', {}); }
+    function onGameOver() { fire('gameOver', { wave: state.wave, lives: state.lives, gold: state.gold }); }
+    function onMapChange(mapInfo) { fire('mapChange', mapInfo); }
+    function onWaveStart() { fire('waveStart', { wave: state.wave }); }
+    function onWaveEnd(reward) { fire('waveEnd', { wave: state.wave, reward }); }
+    function onPauseChange() { fire('pauseChange', { paused: state.paused }); }
+    function onSpeedChange() { fire('speedChange', { speed: state.speed }); }
+    function onAutoWaveChange() { fire('autoWaveChange', { enabled: state.autoWaveEnabled, delay: state.autoWaveDelay }); }
     function onLifeChange(delta, reason) {
         state.lives += delta;
         fire('lifeChange', { lives: state.lives, delta, reason });
         if (state.lives <= 0 && !state.gameOver) { state.gameOver = true; onGameOver(); }
     }
-
     function onGoldChange(delta, reason) {
         state.gold += delta;
         fire('goldChange', { gold: state.gold, delta, reason });
     }
-
-    function onTowerPlace(tower, cost) {
-        fire('towerPlace', { id: tower.id, elt: tower.elt, cost, gx: tower.gx, gy: tower.gy });
-    }
-    function onTowerSell(tower, refund) {
-        fire('towerSell', { id: tower.id, refund });
-    }
-    function onTowerLevel(tower, from, to, cost) {
-        fire('towerLevel', { id: tower.id, from, to, cost });
-    }
-    function onTowerEvo(tower, evoKey) {
-        fire('towerEvo', { id: tower.id, key: evoKey });
-    }
-
-    function onCreepSpawn(cr) {
-        fire('creepSpawn', { creepId: cr.id, type: cr.type });
-    }
-    function onCreepKill(c) {
-        fire('creepKill', { creepId: c.id, type: c.type, gold: c.gold });
-    }
-    function onCreepLeak(c) {
-        fire('creepLeak', { creepId: c.id, type: c.type });
-    }
+    function onTowerPlace(t, cost) { fire('towerPlace', { id: t.id, elt: t.elt, cost, gx: t.gx, gy: t.gy }); }
+    function onTowerSell(t, refund) { fire('towerSell', { id: t.id, refund }); }
+    function onTowerLevel(t, from, to, cost) { fire('towerLevel', { id: t.id, from, to, cost }); }
+    function onTowerEvo(t, key) { fire('towerEvo', { id: t.id, key }); }
+    function onCreepSpawn(c) { fire('creepSpawn', { creepId: c.id, type: c.type }); }
+    function onCreepKill(c) { fire('creepKill', { creepId: c.id, type: c.type, gold: c.gold }); }
+    function onCreepLeak(c) { fire('creepLeak', { creepId: c.id, type: c.type }); }
     function onCreepDamage({ creep, amount, elt, towerId }) {
         fire('creepDamage', { creepId: creep.id, creepType: creep.type, amount, elt, towerId });
     }
+    function onShot(towerId) { fire('shot', { towerId }); }
+    function onHit(towerId) { fire('hit', { towerId }); }
 
-    function onShot(towerId) {
-        fire('shot', { towerId });
-    }
-    function onHit(towerId) {
-        fire('hit', { towerId });
-    }
-
-    // reset/serialize/stats
     function reset(seed) {
         waves.resetSpawner();
         resetState(state, { autoWaveEnabled: state.autoWaveEnabled, autoWaveDelay: state.autoWaveDelay, seed: state.seed, ...seed });
-        // keep current map; recompute pathing
         recomputePathingForAll(state, isBlocked);
         neighborsSynergy();
-        emitter.emit({ type: 'gold.change', gold: state.gold });
-        emitter.emit({ type: 'life.change', lives: state.lives });
-        emitter.emit({ type: 'speed.change', speed: state.speed });
-        emitter.emit({ type: 'pause.change', paused: state.paused });
-        emitter.emit({ type: 'game.reset' });
+        onGameReset();
+        onGoldChange(0);   // notify UI of current value without changing it
+        onLifeChange(0);
+        onSpeedChange();
+        onPauseChange();
     }
 
     function serialize() {
@@ -407,6 +401,10 @@ export function createEngine(seedState) {
 
     // initial path
     recomputePathingForAll(state, isBlocked);
+
+
+    engine.stats = attachStats(engine);
+    engine.hook = hook;
 
     return {
         // state
@@ -439,9 +437,8 @@ export function createEngine(seedState) {
         getMapInfo,
 
         // events
-        on: emitter.on,
-        off: emitter.off,
+        hook,
     };
 }
 
-export { Elt, BLUEPRINT, COST, UPG_COST, TREES, UNLOCK_TIERS, waveConfig };
+export { Elt, BLUEPRINT, COST, UPG_COST, TREES, UNLOCK_TIERS, defaultWaveConfig };

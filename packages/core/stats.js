@@ -1,244 +1,157 @@
 // packages/core/stats.js
-// Unified, event-driven statistics collector for TD engine.
-
-export function createStats(emitter) {
-    // ---- canonical store ----------------------------------------------------
-    const state = fresh();
-
-    // ---- subscriptions ------------------------------------------------------
+export function attachStats(engine) {
+    const stats = fresh();
     const off = [];
 
-    on('game.reset', () => replace(fresh()));
-    on('map.change', () => { /* keep stats; or clear per map if you prefer */ });
+    // helper to attach and collect unsub
+    const on = (name, fn) => off.push(engine.hook(name, fn));
 
-    on('wave.start', ({ wave }) => {
-        state.meta.lastWaveStartAt = performance.now();
-        state.meta.currentWave = wave;
-        state.waves[wave] ||= freshWave(wave);
+    on('waveStart', ({ wave }) => {
+        stats.meta.currentWave = wave;
+        stats.meta.lastWaveStartAt = performance.now();
+        stats.waves[wave] ||= freshWave(wave);
     });
 
-    on('wave.end', ({ wave, reward }) => {
-        const w = state.waves[wave] || freshWave(wave);
+    on('waveEnd', ({ wave, reward }) => {
+        const w = stats.waves[wave] || freshWave(wave);
         w.rewardGold += reward || 0;
-        w.durationMs = (w.durationMs || 0) + Math.max(0, performance.now() - (state.meta.lastWaveStartAt || performance.now()));
-        state.meta.lastWaveStartAt = null;
-
-        state.totals.wavesCleared = Math.max(state.totals.wavesCleared, wave);
-        if (w.leaks > 0) state.meta.leakWaves.add(wave);
+        w.durationMs = (w.durationMs || 0) + Math.max(0, performance.now() - (stats.meta.lastWaveStartAt || performance.now()));
+        stats.totals.wavesCleared = Math.max(stats.totals.wavesCleared, wave);
+        stats.meta.lastWaveStartAt = null;
+        if (w.leaks > 0) stats.meta.leakWaves.add(wave);
     });
 
-    on('life.change', ({ lives, delta }) => {
+    on('lifeChange', ({ lives, delta }) => {
         if (delta < 0) {
-            state.totals.livesLost += Math.abs(delta);
-            const curWave = state.meta.currentWave;
-            if (curWave) {
-                const w = state.waves[curWave] || freshWave(curWave);
-                w.leaks += Math.abs(delta);
-            }
+            stats.totals.livesLost += -delta;
+            const w = waveSlot(); w.leaks += -delta;
         }
-        state.meta.lastLives = lives;
+        stats.meta.lastLives = lives;
     });
 
-    on('gold.change', ({ gold, delta }) => {
-        if (delta > 0) state.totals.goldEarned += delta;
-        if (delta < 0) state.totals.goldSpent += -delta;
-        state.meta.lastGold = gold;
+    on('goldChange', ({ gold, delta }) => {
+        if (delta > 0) stats.totals.goldEarned += delta;
+        if (delta < 0) stats.totals.goldSpent += -delta;
+        stats.meta.lastGold = gold;
     });
 
-    on('tower.place', ({ id, elt, cost, gx, gy }) => {
+    on('towerPlace', ({ id, elt, cost }) => {
         ensureTower(id, elt).placedAt = performance.now();
-        state.totals.goldSpent += cost || 0;
+        stats.totals.goldSpent += cost || 0;
     });
 
-    on('tower.sell', ({ id, refund }) => {
-        const t = state.towers[id];
-        if (t) {
-            t.soldAt = performance.now();
-            t.refund += refund || 0;
-        }
-        state.totals.goldEarned += refund || 0;
-    });
-
-    on('tower.level', ({ id, from, to, cost }) => {
+    on('towerSell', ({ id, refund }) => {
         const t = ensureTower(id);
-        t.levelUps += 1;
-        t.finalLevel = to;
-        state.totals.goldSpent += cost || 0;
+        t.soldAt = performance.now();
+        t.refund += refund || 0;
+        stats.totals.goldEarned += refund || 0;
     });
 
-    on('tower.evo', ({ id, key }) => {
+    on('towerLevel', ({ id, from, to, cost }) => {
+        const t = ensureTower(id);
+        t.levelUps += 1; t.finalLevel = to;
+        stats.totals.goldSpent += cost || 0;
+    });
+
+    on('towerEvo', ({ id, key }) => {
         const t = ensureTower(id);
         t.evolutions.push(key);
     });
 
-    on('shot', ({ towerId }) => {
-        const t = ensureTower(towerId);
-        t.shots += 1; state.totals.shots += 1;
+    on('shot', ({ towerId }) => { ensureTower(towerId).shots += 1; stats.totals.shots += 1; });
+    on('hit', ({ towerId }) => { ensureTower(towerId).hits += 1; stats.totals.hits += 1; });
+
+    on('creepSpawn', ({ type }) => {
+        stats.totals.creepsSpawned += 1;
+        const w = waveSlot(); w.creepsSpawned += 1;
+        bump(stats.creepsByType, type, 1);
     });
 
-    on('hit', ({ towerId }) => {
-        const t = ensureTower(towerId);
-        t.hits += 1; state.totals.hits += 1;
+    on('creepKill', ({ type, gold }) => {
+        stats.totals.creepsKilled += 1;
+        const w = waveSlot(); w.kills += 1;
+        bump(stats.killsByType, type, 1);
+        if (gold) stats.totals.goldEarned += gold;
     });
 
-    on('damage', ({ towerId, elt, creepType, amount }) => {
+    on('creepLeak', ({ type }) => {
+        stats.totals.creepsLeaked += 1;
+        const w = waveSlot(); w.leaks += 1;
+        bump(stats.leaksByType, type, 1);
+    });
+
+    on('creepDamage', ({ towerId, elt, creepType, amount }) => {
         const t = ensureTower(towerId, elt);
         t.damage += amount || 0;
         t.damageByElt[elt] = (t.damageByElt[elt] || 0) + (amount || 0);
-        state.totals.damage += amount || 0;
-        if (creepType) {
-            state.damageByCreep[creepType] = (state.damageByCreep[creepType] || 0) + (amount || 0);
-        }
+        stats.totals.damage += amount || 0;
+        if (creepType) bump(stats.damageByCreep, creepType, amount || 0);
     });
 
-    on('creep.spawn', ({ type }) => {
-        state.totals.creepsSpawned += 1;
-        const w = waveSlot();
-        w.creepsSpawned += 1;
-        bump(state.creepsByType, type, 1);
-    });
-
-    on('creep.kill', ({ type, gold }) => {
-        state.totals.creepsKilled += 1;
-        const w = waveSlot();
-        w.kills += 1;
-        bump(state.killsByType, type, 1);
-        if (gold) state.totals.goldEarned += gold;
-    });
-
-    on('creep.leak', ({ type }) => {
-        state.totals.creepsLeaked += 1;
-        const w = waveSlot();
-        w.leaks += 1;
-        bump(state.leaksByType, type, 1);
-    });
-
-    on('combo.trigger', () => {
-        state.totals.combos += 1;
-        const w = waveSlot();
-        w.combos += 1;
-    });
-
-    // ---- public api ---------------------------------------------------------
+    // public
     return {
-        get raw() { return state; },
+        raw: stats,
         summary() {
-            const acc = accuracy(state.totals.hits, state.totals.shots);
-            const bestTower = topTower(state.towers, t => t.damage);
-            const bestHitRate = topTower(state.towers, t => accuracy(t.hits, t.shots));
-
+            const bestDamage = top(stats.towers, t => t.damage);
+            const bestHit = top(stats.towers, t => acc(t.hits, t.shots));
             return {
                 totals: {
-                    wavesCleared: state.totals.wavesCleared,
-                    goldEarned: state.totals.goldEarned,
-                    goldSpent: state.totals.goldSpent,
-                    damage: Math.round(state.totals.damage),
+                    wavesCleared: stats.totals.wavesCleared,
+                    goldEarned: stats.totals.goldEarned,
+                    goldSpent: stats.totals.goldSpent,
+                    damage: Math.round(stats.totals.damage),
                     creeps: {
-                        spawned: state.totals.creepsSpawned,
-                        killed: state.totals.creepsKilled,
-                        leaked: state.totals.creepsLeaked,
+                        spawned: stats.totals.creepsSpawned,
+                        killed: stats.totals.creepsKilled,
+                        leaked: stats.totals.creepsLeaked,
                     },
-                    livesLost: state.totals.livesLost,
-                    combos: state.totals.combos,
-                    accuracy: acc,
+                    livesLost: stats.totals.livesLost,
+                    combos: stats.totals.combos || 0,
+                    accuracy: acc(stats.totals.hits, stats.totals.shots),
                 },
-                perWave: state.waves,
+                perWave: stats.waves,
                 perType: {
-                    kills: state.killsByType,
-                    leaks: state.leaksByType,
-                    damage: state.damageByCreep,
+                    kills: stats.killsByType,
+                    leaks: stats.leaksByType,
+                    damage: stats.damageByCreep,
                 },
-                towers: state.towers,
+                towers: stats.towers,
                 highlights: {
-                    topDamageTower: bestTower?.id || null,
-                    topDamageValue: bestTower?.score || 0,
-                    topHitRateTower: bestHitRate?.id || null,
-                    topHitRate: bestHitRate?.score || 0,
-                    leakWaves: Array.from(state.meta.leakWaves).sort((a, b) => a - b),
-                },
+                    topDamageTower: bestDamage?.id || null,
+                    topDamageValue: bestDamage?.score || 0,
+                    topHitRateTower: bestHit?.id || null,
+                    topHitRate: bestHit?.score || 0,
+                    leakWaves: Array.from(stats.meta.leakWaves).sort((a, b) => a - b),
+                }
             };
         },
         dispose() { off.forEach(fn => fn()); off.length = 0; },
     };
 
-    // ---- helpers ------------------------------------------------------------
-    function on(type, fn) {
-        const unsub = emitter.on(type, fn);
-        off.push(unsub);
-    }
-
-    function waveSlot() {
-        const w = state.meta.currentWave;
-        if (!w) return freshWave(0);
-        state.waves[w] ||= freshWave(w);
-        return state.waves[w];
-    }
-
-    function ensureTower(id, elt) {
-        state.towers[id] ||= {
-            id, elt: elt || null,
-            placedAt: 0, soldAt: 0,
-            levelUps: 0, finalLevel: 1,
-            evolutions: [],
-            shots: 0, hits: 0,
-            damage: 0,
-            damageByElt: {},
-            refund: 0,
-        };
-        if (elt && !state.towers[id].elt) state.towers[id].elt = elt;
-        return state.towers[id];
-    }
-
-    function bump(obj, key, by) { obj[key] = (obj[key] || 0) + by; }
-
-    function accuracy(h, s) { return s > 0 ? +(100 * h / s).toFixed(1) : 0; }
-
-    function topTower(map, metric) {
-        let best = null;
-        for (const id in map) {
-            const score = metric(map[id]) || 0;
-            if (!best || score > best.score) best = { id, score };
-        }
-        return best;
-    }
-
-    function replace(next) {
-        Object.keys(state).forEach(k => delete state[k]);
-        Object.assign(state, next);
-    }
-
+    // ---- helpers
     function fresh() {
         return {
             totals: {
-                wavesCleared: 0,
-                goldEarned: 0,
-                goldSpent: 0,
-                damage: 0,
-                creepsSpawned: 0,
-                creepsKilled: 0,
-                creepsLeaked: 0,
-                livesLost: 0,
-                combos: 0,
-                shots: 0,
-                hits: 0,
+                wavesCleared: 0, goldEarned: 0, goldSpent: 0,
+                damage: 0, creepsSpawned: 0, creepsKilled: 0, creepsLeaked: 0,
+                livesLost: 0, combos: 0, shots: 0, hits: 0,
             },
-            waves: Object.create(null),          // waveIdx -> {kills, leaks, rewardGold, durationMs, combos, creepsSpawned}
-            towers: Object.create(null),         // towerId -> stats
-            killsByType: Object.create(null),    // type -> count
-            leaksByType: Object.create(null),    // type -> count
-            creepsByType: Object.create(null),   // type -> count
-            damageByCreep: Object.create(null),  // creep type -> damage
-            meta: {
-                currentWave: 0,
-                lastWaveStartAt: null,
-                lastGold: 0,
-                lastLives: 0,
-                leakWaves: new Set(),
-            },
+            waves: Object.create(null),
+            towers: Object.create(null),
+            killsByType: Object.create(null),
+            leaksByType: Object.create(null),
+            creepsByType: Object.create(null),
+            damageByCreep: Object.create(null),
+            meta: { currentWave: 0, lastWaveStartAt: null, lastGold: 0, lastLives: 0, leakWaves: new Set() },
         };
     }
-
-    function freshWave(wave) {
-        return { wave, kills: 0, leaks: 0, rewardGold: 0, durationMs: 0, combos: 0, creepsSpawned: 0 };
+    function freshWave(wave) { return { wave, kills: 0, leaks: 0, rewardGold: 0, durationMs: 0, combos: 0, creepsSpawned: 0 }; }
+    function ensureTower(id, elt) {
+        const t = (stats.towers[id] ||= { id, elt: elt || null, placedAt: 0, soldAt: 0, levelUps: 0, finalLevel: 1, evolutions: [], shots: 0, hits: 0, damage: 0, damageByElt: {}, refund: 0 });
+        if (elt && !t.elt) t.elt = elt;
+        return t;
     }
+    function bump(obj, k, by) { obj[k] = (obj[k] || 0) + by; }
+    function acc(h, s) { return s > 0 ? +(100 * h / s).toFixed(1) : 0; }
+    function top(map, metric) { let best = null; for (const id in map) { const v = metric(map[id]) || 0; if (!best || v > best.score) best = { id, score: v }; } return best; }
 }

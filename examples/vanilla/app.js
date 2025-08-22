@@ -244,33 +244,12 @@ async function repaintTowerDetails(force = true) {
   }
 }
 
-engine.on('xp.gain', ({ towerId, amount }) => {
-  // flash tower or toast
-  // toast(`+${amount} XP`);
-});
-engine.on('loot.drop', ({ itemId, x, y }) => {
-  // spawn a brief sparkle at (x,y) in the renderer, or just console log for now
-  // console.log('DROP', itemId);
-});
-engine.on('map.change', ({ map }) => {
-  canvas.width = map.size.cols * TILE;
-  canvas.height = map.size.rows * TILE;
-  canvas.width = w;
-  canvas.height = h;
-  fit();
-});
-engine.on('game.over', () => {
-  console.log('STATS SUMMARY', engine.stats.summary());
-});
-
-
 // ---------- Controls ----------
 document.getElementById('start')?.addEventListener('click', () => engine.startWave());
 document.getElementById('pause')?.addEventListener('click', () => engine.setPaused(!engine.state.paused));
 const fastBtn = document.getElementById('fast');
 const updateSpeedLabel = () => { if (fastBtn) fastBtn.textContent = (engine.state.speed || 1) + '×'; };
-fastBtn.onclick = () => { engine.cycleSpeed(); updateSpeedLabel(); };
-engine.on('speed.change', updateSpeedLabel);
+fastBtn && (fastBtn.onclick = () => { engine.cycleSpeed(); updateSpeedLabel(); });
 updateSpeedLabel();
 
 document.getElementById('mStart')?.addEventListener('click', () => engine.startWave());
@@ -291,15 +270,18 @@ document.getElementById('goRestart')?.addEventListener('click', () => {
 });
 
 // ---------- Event-driven UI refresh ----------
-engine.on('gold.change', () => syncHud());
-engine.on('creep.kill', () => syncHud());
-engine.on('wave.end', () => syncHud());
-engine.on('life.change', () => syncHud());
+engine.hook('goldChange', () => syncHud());
+engine.hook('creepKill', () => syncHud());
+engine.hook('waveEnd', () => syncHud());
+engine.hook('lifeChange', () => syncHud());
 
+engine.hook('mapChange', ({ size }) => {
+  sizeCanvasToCurrentMap();
+});
 const po = document.getElementById('pauseOverlay');
 const poClose = document.getElementById('poClose');
 
-engine.on('pause.change', ({ paused }) => {
+engine.hook('pauseChange', ({ paused }) => {
   if (paused && !engine.state.gameOver) {
     po?.classList.remove('hidden');
     po?.classList.add('flex');
@@ -309,16 +291,16 @@ engine.on('pause.change', ({ paused }) => {
   }
 });
 poClose?.addEventListener('click', () => engine.setPaused(false));
-engine.on('speed.change', ({ speed }) => {
-  // Update the labels wherever you show speed (desktop + mobile)
-  const fastBtn = document.getElementById('fast');
-  const mFastBtn = document.getElementById('mFast');
+
+engine.hook('speedChange', ({ speed }) => {
   const label = (speed === 1 ? '1×' : speed === 2 ? '2×' : '4×');
-  if (fastBtn) fastBtn.textContent = label;
-  if (mFastBtn) mFastBtn.textContent = label;
+  const fastElem = document.getElementById('fast');
+  if (fastElem) fastElem.textContent = label;
+  const mFastElem = document.getElementById('mFast');
+  if (mFastElem) mFastElem.textContent = label;
 });
-engine.on('game.over', (ev) => {
-  // ev has fields directly: score, leaks, accuracy, wavesCleared, etc.
+
+engine.hook('gameOver', (ev) => {
   const goBody = document.getElementById('goBody');
   const t = engine.state.towers.find(tt => tt.id === ev.topKillerTowerId);
   const topKillerLabel = t ? `${t.elt} @ ${t.gx},${t.gy}` : '—';
@@ -353,6 +335,7 @@ engine.on('game.over', (ev) => {
   modal.classList.remove('hidden');
   modal.classList.add('flex');
 });
+
 // Overlay controls
 const awToggle = document.getElementById('autoWaveToggle');
 const awDelay = document.getElementById('autoWaveDelay');
@@ -371,24 +354,21 @@ awHUD?.addEventListener('change', () => {
 });
 
 // keep UI in sync if engine changes from code
-engine.on('autowave.change', ({ enabled, delay }) => {
+engine.hook('autoWaveChange', ({ enabled, delay }) => {
   if (awToggle) awToggle.checked = !!enabled;
   if (awHUD) awHUD.checked = !!enabled;
   if (awDelay && typeof delay === 'number') awDelay.value = String(delay);
 });
 
-// initial sync
 if (awToggle) awToggle.checked = engine.state.autoWaveEnabled;
 if (awHUD) awHUD.checked = engine.state.autoWaveEnabled;
 if (awDelay) awDelay.value = String(engine.state.autoWaveDelay);
 
 // ---------- Event-driven console logs ----------
-engine.on('gold.change', (g) => console.log('gold', g));
-engine.on('creep.kill', (e) => console.log('kill', e));
-engine.on('loot.drop', (e) => console.log('drop', e.itemId));
-
-engine.on('life.change', (g) => console.log('life.change', g));
-engine.on('game.over', (g) => console.log('game over!', g));
+engine.hook('goldChange', (g) => console.log('gold', g));
+engine.hook('creepKill', (e) => console.log('kill', e));
+engine.hook('lifeChange', (e) => console.log('life.change', e));
+engine.hook('gameOver', (e) => console.log('game over!', e));
 
 // ---------- Loop ----------
 let last = performance.now();
