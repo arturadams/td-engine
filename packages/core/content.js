@@ -48,7 +48,9 @@ export const EltType = Object.fromEntries(ELEMENTS.map(e => [e.key, e.type]));
 export const EltStatus = Object.fromEntries(ELEMENTS.map(e => [e.key, e.status]));
 
 // Non-elemental/basic towers that don't inflict statuses
-export const BASIC_TOWERS = ['ARCHER', 'CANNON'];
+// Include legacy 'CANNON' for backwards compatibility, but the
+// canonical name is 'SIEGE'.
+export const BASIC_TOWERS = ['ARCHER', 'SIEGE', 'CANNON'];
 
 // Upgrade cost now varies by tower category; `elt` is optional for backwards compat
 export const UPG_COST = (lvl, elt) => {
@@ -131,7 +133,10 @@ export const ResistProfiles = {
 
 export const BLUEPRINT = {
   ARCHER: { range: 110, firerate: 1.1, dmg: 9, type: 'bolt', status: null },
-  CANNON: { range: 120, firerate: 0.75, dmg: 16, type: 'splash', status: null },
+  // Siege towers are the renamed cannon towers. They fire heavy shells
+  // with a wider explosion radius. Keep a CANNON alias for older saves.
+  SIEGE: { range: 120, firerate: 0.75, dmg: 16, type: 'siege', status: null },
+  CANNON: { range: 120, firerate: 0.75, dmg: 16, type: 'siege', status: null },
   FIRE: { range: 120, firerate: 0.8, dmg: 22, type: 'splash', status: Status.BURN },
   ICE: { range: 130, firerate: 0.95, dmg: 12, type: 'bolt', status: Status.CHILL },
   LIGHT: { range: 140, firerate: 0.7, dmg: 18, type: 'chain', status: Status.SHOCK },

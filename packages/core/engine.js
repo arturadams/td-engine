@@ -67,7 +67,8 @@ export function createEngine(seedState) {
         return true;
     }
 
-    const normalizeElt = (e) => (e === Elt.CANNON ? Elt.SIEGE : e);
+    // Handle legacy 'CANNON' tower name by normalizing it to 'SIEGE'.
+    const normalizeElt = (e) => (e === 'CANNON' ? Elt.SIEGE : e);
 
     function placeTower(gx, gy, rawElt) {
         const elt = normalizeElt(rawElt);
