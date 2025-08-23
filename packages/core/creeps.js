@@ -27,10 +27,11 @@ function buildPredecessorGrid(end, isBlocked, cols, rows) {
   const dist = Array.from({ length: rows }, () => Array(cols).fill(Infinity));
   const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
   const q = [{ x: end.x, y: end.y }];
+  let head = 0;
   dist[end.y][end.x] = 0;
   const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  while (q.length) {
-    const cur = q.shift();
+  while (head < q.length) {
+    const cur = q[head++];
     const d = dist[cur.y][cur.x] + 1;
     for (const [dx,dy] of dirs) {
       const nx = cur.x + dx, ny = cur.y + dy;
