@@ -143,7 +143,9 @@ function refreshBuildPalette() {
     btn.classList.toggle('opacity-50', !affordable);
     btn.classList.toggle('pointer-events-none', !affordable);
     const label = elt[0] + elt.slice(1).toLowerCase();
-    btn.textContent = `${label} (${COST[elt]})`;
+    const cost = COST[elt];
+    btn.textContent = `${label} (${cost})`;
+    btn.title = `${label} – ${cost} gold`;
   });
 }
 
@@ -156,6 +158,41 @@ function wirePaletteButtons(scope = document) {
   });
 }
 wirePaletteButtons(document);
+refreshBuildPalette();
+
+function attachButtonTooltips(scope = document) {
+  scope.querySelectorAll('[data-elt]').forEach(btn => {
+    const show = () => {
+      const tip = document.createElement('div');
+      tip.textContent = btn.title;
+      tip.style.position = 'absolute';
+      tip.style.background = 'rgba(0,0,0,.9)';
+      tip.style.color = '#fff';
+      tip.style.padding = '2px 6px';
+      tip.style.fontSize = '12px';
+      tip.style.borderRadius = '4px';
+      tip.style.pointerEvents = 'none';
+      tip.style.zIndex = 100;
+      document.body.appendChild(tip);
+      const rect = btn.getBoundingClientRect();
+      tip.style.left = `${rect.left + rect.width / 2}px`;
+      tip.style.top = `${rect.top}px`;
+      tip.style.transform = 'translate(-50%, -100%)';
+      btn._tip = tip;
+    };
+    const hide = () => {
+      if (btn._tip) {
+        btn._tip.remove();
+        btn._tip = null;
+      }
+    };
+    btn.addEventListener('mouseenter', show);
+    btn.addEventListener('mouseleave', hide);
+    btn.addEventListener('focus', show);
+    btn.addEventListener('blur', hide);
+  });
+}
+attachButtonTooltips(document);
 
 // Hotkeys
 window.addEventListener('keydown', (e) => {
