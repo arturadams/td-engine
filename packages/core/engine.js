@@ -11,6 +11,7 @@ import { astar } from './pathfinding.js';
 import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
+import { rebuildCreepGrid } from './spatial.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -235,6 +236,8 @@ export function createEngine(seedState) {
             });
             if (c.hp <= 0 && c.alive) { c.alive = false; }
         }
+
+        rebuildCreepGrid(state);
 
         for (const t of state.towers) { if (!t.ghost) fireTower(state, { onShot, onHit, onCreepDamage }, t, dt); }
 

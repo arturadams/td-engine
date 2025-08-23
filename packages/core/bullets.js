@@ -2,6 +2,7 @@
 import { takeDamage, applyStatus } from './combat.js';
 import { acquireParticle } from './particles.js';
 import { getEffect } from './effects/index.js';
+import { queryCreeps } from './spatial.js';
 
 function addParticle(state, props) {
     const p = acquireParticle();
@@ -75,7 +76,8 @@ export function updateBullets(state, { onCreepDamage }) {
         if (b.ttl <= 0) {
             if (b.kind === 'splash') {
                 let hitAny = false;
-                for (const c of state.creeps) {
+                const nearby = queryCreeps(state, b.x, b.y, b.aoe);
+                for (const c of nearby) {
                     if (!c.alive) continue;
                     const dx = c.x - b.x, dy = c.y - b.y;
                     if (dx * dx + dy * dy <= b.aoe * b.aoe) {
