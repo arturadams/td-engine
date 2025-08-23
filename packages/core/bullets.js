@@ -75,21 +75,22 @@ export function updateBullets(state, { onCreepDamage }) {
         if (b.ttl <= 0) {
             if (b.kind === 'splash') {
                 let hitAny = false;
-                const fromT = state.towers.find(tt => tt.id === b.fromId);
                 for (const c of state.creeps) {
                     if (!c.alive) continue;
-                    if (Math.hypot(c.x - b.x, c.y - b.y) <= b.aoe) {
+                    const dx = c.x - b.x, dy = c.y - b.y;
+                    if (dx * dx + dy * dy <= b.aoe * b.aoe) {
                         takeDamage(c, b.dmg, b.elt, c.status.resShred || 0);
-                        applyStatus(c, b.status, fromT);
+                        applyStatus(c, b.status, { mod: b.mod });
                         hitAny = true;
-                        onCreepDamage?.({ creep: c, amount: b.dmg, elt: b.elt, towerId: fromT?.id });
+                        onCreepDamage?.({ creep: c, amount: b.dmg, elt: b.elt, towerId: b.fromId });
                     }
                 }
                 if (hitAny) state.hits++;
                 effect.aoe(state, b);
             }
             effect.impact(state, b);
-            state.bullets.splice(i, 1);
+            const last = state.bullets.pop();
+            if (i < state.bullets.length) state.bullets[i] = last;
         }
     }
 }
