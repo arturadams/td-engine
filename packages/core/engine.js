@@ -7,7 +7,6 @@ import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
 import { updateBullets } from './bullets.js';
 import { updateParticles } from './particles.js';
-import { astar } from './pathfinding.js';
 import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
@@ -73,17 +72,30 @@ export function createEngine(seedState) {
         if (gx === end.x && gy === end.y) return false;
         if (!canBuildCell(gx, gy)) return false;
         if (state.towers.some(t => t.gx === gx && t.gy === gy)) return false;
-        const cached = state.path;
-        const onPath = cached?.some(n => n.x === gx && n.y === gy);
-        if (!cached || !cached.length || onPath) {
-            const p = astar(
-                state.map.start,
-                state.map.end,
-                (x, y) => (x === gx && y === gy) || isBlocked(x, y),
-                state.map.size.cols,
-                state.map.size.rows,
-            );
-            return !!p;
+
+        const dist = state.pathGrid?.dist;
+        const px = cellCenterForMap(state.map, gx, gy);
+        const onPath = state.path?.some(p => p.x === px.x && p.y === px.y);
+        if (!dist || onPath) {
+            const { cols, rows } = state.map.size;
+            const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+            const q = [{ x: start.x, y: start.y }];
+            visited[start.y][start.x] = true;
+            const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            while (q.length) {
+                const cur = q.shift();
+                if (cur.x === end.x && cur.y === end.y) return true;
+                for (const [dx, dy] of dirs) {
+                    const nx = cur.x + dx, ny = cur.y + dy;
+                    if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+                    if (visited[ny][nx]) continue;
+                    if ((nx === gx && ny === gy) || isBlocked(nx, ny)) continue;
+                    if (dist && dist[ny][nx] === Infinity) continue;
+                    visited[ny][nx] = true;
+                    q.push({ x: nx, y: ny });
+                }
+            }
+            return false;
         }
         // tile not on cached path; existing path remains valid
         return true;
