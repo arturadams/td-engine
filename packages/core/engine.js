@@ -44,7 +44,7 @@ export function createEngine(seedState) {
         if (gx === start.x && gy === start.y) return false;
         if (gx === end.x && gy === end.y) return false;
         if (!canBuildCell(gx, gy)) return true;        // <- uses refreshed checker
-        return state.towers.some(t => t.gx === gx && t.gy === gy);
+        return towerGrid.has(gridKey(gx, gy));
     };
 
     function neighborsSynergy() {
@@ -71,7 +71,7 @@ export function createEngine(seedState) {
         if (gx === start.x && gy === start.y) return false;
         if (gx === end.x && gy === end.y) return false;
         if (!canBuildCell(gx, gy)) return false;
-        if (state.towers.some(t => t.gx === gx && t.gy === gy)) return false;
+        if (towerGrid.has(gridKey(gx, gy))) return false;
 
         const dist = state.pathGrid?.dist;
         const px = cellCenterForMap(state.map, gx, gy);
