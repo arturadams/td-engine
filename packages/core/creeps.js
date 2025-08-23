@@ -31,11 +31,13 @@ export function advanceCreep(state, c, onLeak) {
   let A = c.path[c.seg], B = c.path[c.seg + 1];
   if (!B) { c.alive = false; state.lives--; onLeak(); return; }
 
-  const vx = B.x - A.x, vy = B.y - A.y;
-  const d = Math.hypot(vx, vy);
-  const dirx = vx / d, diry = vy / d;
-  c.x += dirx * speed * state.dt; c.y += diry * speed * state.dt; c.t += speed * state.dt;
-  if (c.t >= d) { c.seg++; c.t = 0; c.x = c.path[c.seg].x; c.y = c.path[c.seg].y; }
+  if (c._seg !== c.seg) {
+    const vx = B.x - A.x, vy = B.y - A.y;
+    const d = Math.sqrt(vx * vx + vy * vy);
+    c._dirx = vx / d; c._diry = vy / d; c._len = d; c._seg = c.seg;
+  }
+  c.x += c._dirx * speed * state.dt; c.y += c._diry * speed * state.dt; c.t += speed * state.dt;
+  if (c.t >= c._len) { c.seg++; c.t = 0; c.x = c.path[c.seg].x; c.y = c.path[c.seg].y; c._seg = c.seg - 1; }
 }
 
 export function cullDead(state, { onKill }) {

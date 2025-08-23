@@ -7,10 +7,11 @@ export function targetInRange(state, t) {
 
     if (mode === 'cycle') {
         const inRange = [];
+        const r2 = t.range * t.range;
         for (const c of state.creeps) {
             if (!c.alive) continue;
-            const d = Math.hypot(c.x - t.x, c.y - t.y);
-            if (d <= t.range) inRange.push(c);
+            const dx = c.x - t.x, dy = c.y - t.y;
+            if (dx * dx + dy * dy <= r2) inRange.push(c);
         }
         if (!inRange.length) return null;
         inRange.sort((a, b) => (b.seg + b.t) - (a.seg + a.t));
@@ -23,20 +24,22 @@ export function targetInRange(state, t) {
     let best = null;
     if (mode === 'last') {
         let bestProg = Infinity;
+        const r2 = t.range * t.range;
         for (const c of state.creeps) {
             if (!c.alive) continue;
-            const d = Math.hypot(c.x - t.x, c.y - t.y);
-            if (d <= t.range) {
+            const dx = c.x - t.x, dy = c.y - t.y;
+            if (dx * dx + dy * dy <= r2) {
                 const prog = c.seg + c.t;
                 if (prog < bestProg) { best = c; bestProg = prog; }
             }
         }
     } else {
         let bestProg = -1;
+        const r2 = t.range * t.range;
         for (const c of state.creeps) {
             if (!c.alive) continue;
-            const d = Math.hypot(c.x - t.x, c.y - t.y);
-            if (d <= t.range) {
+            const dx = c.x - t.x, dy = c.y - t.y;
+            if (dx * dx + dy * dy <= r2) {
                 const prog = c.seg + c.t;
                 if (prog > bestProg) { best = c; bestProg = prog; }
             }
@@ -49,10 +52,11 @@ function handleNova(state, t, dt) {
     t.novaTimer -= dt; const freq = 4.5 * (t.mod.novaFreq || 1);
     if (t.novaTimer <= 0) {
         t.novaTimer = freq;
+        const r = t.range * 0.7, r2 = r * r;
         for (const c of state.creeps) {
             if (!c.alive) continue;
-            const d = Math.hypot(c.x - t.x, c.y - t.y);
-            if (d <= t.range * 0.7) applyStatus(c, Status.CHILL, t);
+            const dx = c.x - t.x, dy = c.y - t.y;
+            if (dx * dx + dy * dy <= r2) applyStatus(c, Status.CHILL, t);
         }
     }
 }
@@ -74,7 +78,7 @@ function handleMeteors(state, { onHit, onCreepDamage }, t, dt) {
 
 function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
     const dx = target.x - t.x, dy = target.y - t.y;
-    const dist = Math.hypot(dx, dy);
+    const dist = Math.sqrt(dx * dx + dy * dy);
     let speed = 480;
     if (t.elt === 'ICE') speed = 360;
     // create a visual bullet
@@ -96,7 +100,7 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
         onCreepDamage?.({ creep: target, amount: dmg, elt: t.elt, towerId: t.id });
 
         if (t.mod.pierce && t.mod.pierce > 0) {
-            const dirx = target.x - t.x, diry = target.y - t.y; const len = Math.hypot(dirx, diry);
+            const dirx = target.x - t.x, diry = target.y - t.y; const len = Math.sqrt(dirx * dirx + diry * diry);
             const nx = dirx / len, ny = diry / len;
             let remaining = t.mod.pierce;
             for (const c of state.creeps) {
@@ -130,11 +134,15 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
     let bounces = 1 + (t.mod.chainBounce || 0); let last = target; let bounced = new Set([last.id]);
     let chainRange = 70 + (t.mod.chainRange || 0);
     while (bounces-- > 0) {
-        const next = state.creeps.find(c => c.alive && !bounced.has(c.id) && Math.hypot(c.x - last.x, c.y - last.y) <= chainRange);
+    const next = state.creeps.find(c => {
+        if (!c.alive || bounced.has(c.id)) return false;
+        const dx = c.x - last.x, dy = c.y - last.y;
+        return dx * dx + dy * dy <= chainRange * chainRange;
+    });
         if (!next) break; bounced.add(next.id);
 
         const dx = next.x - last.x, dy = next.y - last.y;
-        const dist = Math.hypot(dx, dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         const speed = 480;
         state.bullets.push({
             kind: 'bolt',
@@ -158,7 +166,7 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
 
 function splashStrategy(state, { onShot }, t, target, dmg) {
     const dx = target.x - t.x, dy = target.y - t.y;
-    const dist = Math.hypot(dx, dy);
+    const dist = Math.sqrt(dx * dx + dy * dy);
     const speed = 260;
     state.bullets.push({
         kind: 'splash',
@@ -169,6 +177,7 @@ function splashStrategy(state, { onShot }, t, target, dmg) {
         aoe: 34 + (t.mod.splash ? 24 : 0),
         color: EltColor[t.elt],
         fromId: t.id,
+        mod: t.mod,
         elt: t.elt,
         status: t.status,
         dmg,
@@ -182,7 +191,7 @@ function splashStrategy(state, { onShot }, t, target, dmg) {
 // and slower travel speed than standard splash towers.
 function siegeStrategy(state, { onShot }, t, target, dmg) {
     const dx = target.x - t.x, dy = target.y - t.y;
-    const dist = Math.hypot(dx, dy);
+    const dist = Math.sqrt(dx * dx + dy * dy);
     const speed = 180; // slower projectile
     state.bullets.push({
         kind: 'splash',
@@ -193,6 +202,7 @@ function siegeStrategy(state, { onShot }, t, target, dmg) {
         aoe: 50 + (t.mod.splash ? 24 : 0),
         color: EltColor[t.elt],
         fromId: t.id,
+        mod: t.mod,
         elt: t.elt,
         status: t.status,
         dmg,

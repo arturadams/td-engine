@@ -37,8 +37,13 @@ export function createEngine(seedState) {
     };
 
     function neighborsSynergy() {
+        const r2 = (2 * TILE + 1) * (2 * TILE + 1);
         for (const t of state.towers) {
-            const neighbors = state.towers.filter(o => o !== t && Math.hypot(o.x - t.x, o.y - t.y) <= 2 * TILE + 1);
+            const neighbors = state.towers.filter(o => {
+                if (o === t) return false;
+                const dx = o.x - t.x, dy = o.y - t.y;
+                return dx * dx + dy * dy <= r2;
+            });
             const uniq = new Set(neighbors.map(n => n.elt));
             t.synergy = 0.08 * uniq.size;
         }
