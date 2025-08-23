@@ -47,10 +47,24 @@ export function createEngine(seedState) {
         return towerGrid.has(gridKey(gx, gy));
     };
 
-    function neighborsSynergy() {
+    const gatherNeighbors = (gx, gy) => {
+        const range = 2;
+        const out = new Set();
+        for (let dx = -range; dx <= range; dx++) {
+            for (let dy = -range; dy <= range; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                const n = towerGrid.get(gridKey(gx + dx, gy + dy));
+                if (n) out.add(n);
+            }
+        }
+        return out;
+    };
+
+    function neighborsSynergy(targetTowers = state.towers) {
         const r2 = (2 * TILE + 1) * (2 * TILE + 1);
         const range = 2; // in tiles
-        for (const t of state.towers) {
+        for (const t of targetTowers) {
+            if (!t) continue;
             const uniq = new Set();
             for (let dx = -range; dx <= range; dx++) {
                 for (let dy = -range; dy <= range; dy++) {
@@ -134,7 +148,9 @@ export function createEngine(seedState) {
         towerGrid.set(gridKey(gx, gy), t);
         onGoldChange(-cost, 'place_tower');
         state.selectedTowerId = t.id;
-        neighborsSynergy();
+        const affected = gatherNeighbors(gx, gy);
+        affected.add(t);
+        neighborsSynergy(affected);
         recomputePathingForAll(state, isBlocked);
         onTowerPlace(t, cost);
         return { ok: true, tower: t };
@@ -151,7 +167,8 @@ export function createEngine(seedState) {
         towerGrid.delete(gridKey(t.gx, t.gy));
         if (state.selectedTowerId === id) state.selectedTowerId = null;
 
-        neighborsSynergy();
+        const affected = gatherNeighbors(t.gx, t.gy);
+        neighborsSynergy(affected);
         recomputePathingForAll(state, isBlocked);
 
         onGoldChange(+refund, 'sell_tower');
