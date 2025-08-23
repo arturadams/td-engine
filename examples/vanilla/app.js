@@ -169,6 +169,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Digit7') { engine.setBuild('EARTH'); changed = true; }
   if (e.code === 'Digit8') { engine.setBuild('WIND'); changed = true; }
   if (e.code === 'Digit9') { engine.setBuild('ARCANE'); changed = true; }
+  if (e.code === 'Digit0') { engine.setBuild('WATER'); changed = true; }
   if (e.code === 'Space') engine.startWave();
   if (e.code === 'KeyP') engine.setPaused(!engine.state.paused);
   if (e.code === 'KeyF') engine.toggleFast();
