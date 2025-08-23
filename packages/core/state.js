@@ -34,6 +34,8 @@ export function createInitialState(seedState) {
         bullets: [],
         events: [],
         particles: [],
+        creepGrid: new Map(),
+        creepCellSize: 40,
 
         creepProfiles: seedState?.creepProfiles ?? structuredClone(ResistProfiles),
 
@@ -42,6 +44,7 @@ export function createInitialState(seedState) {
 
         path: [],
         pathPx: [],
+        pathGrid: null,
 
         gameOver: false,
         stats: { leaks: 0, leakedByWave: {}, killsByTower: {}, wavesCleared: 0 },
@@ -66,8 +69,9 @@ export function resetState(state, keep = {}) {
         autoWaveDelay: keep.autoWaveDelay ?? 1200, _autoWaveTimer: -1,
 
         towers: [], creeps: [], bullets: [], events: [], particles: [],
+        creepGrid: new Map(), creepCellSize: 40,
         selectedTowerId: null, hover: { gx: -1, gy: -1, valid: false },
-        path: [], pathPx: [], gameOver: false,
+        path: [], pathPx: [], pathGrid: null, gameOver: false,
         stats: { leaks: 0, leakedByWave: {}, killsByTower: {}, wavesCleared: 0 },
     });
 

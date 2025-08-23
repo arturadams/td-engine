@@ -7,10 +7,10 @@ import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
 import { updateBullets } from './bullets.js';
 import { updateParticles } from './particles.js';
-import { astar } from './pathfinding.js';
 import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
+import { rebuildCreepGrid } from './spatial.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -18,6 +18,17 @@ export function createEngine(seedState) {
     const engine = {};
 
     const state = createInitialState(seedState);
+
+    // spatial index for towers keyed by grid coords "gx,gy"
+    const towerGrid = new Map();
+    const gridKey = (gx, gy) => `${gx},${gy}`;
+    const rebuildTowerGrid = () => {
+        towerGrid.clear();
+        for (const t of state.towers) {
+            towerGrid.set(gridKey(t.gx, t.gy), t);
+        }
+    };
+    rebuildTowerGrid();
 
     // map helpers (bound to current state.map)
     const inBounds = (gx, gy) =>
@@ -38,13 +49,18 @@ export function createEngine(seedState) {
 
     function neighborsSynergy() {
         const r2 = (2 * TILE + 1) * (2 * TILE + 1);
+        const range = 2; // in tiles
         for (const t of state.towers) {
-            const neighbors = state.towers.filter(o => {
-                if (o === t) return false;
-                const dx = o.x - t.x, dy = o.y - t.y;
-                return dx * dx + dy * dy <= r2;
-            });
-            const uniq = new Set(neighbors.map(n => n.elt));
+            const uniq = new Set();
+            for (let dx = -range; dx <= range; dx++) {
+                for (let dy = -range; dy <= range; dy++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const n = towerGrid.get(gridKey(t.gx + dx, t.gy + dy));
+                    if (!n) continue;
+                    const px = n.x - t.x, py = n.y - t.y;
+                    if (px * px + py * py <= r2) uniq.add(n.elt);
+                }
+            }
             t.synergy = 0.08 * uniq.size;
         }
     }
@@ -56,17 +72,30 @@ export function createEngine(seedState) {
         if (gx === end.x && gy === end.y) return false;
         if (!canBuildCell(gx, gy)) return false;
         if (state.towers.some(t => t.gx === gx && t.gy === gy)) return false;
-        const cached = state.path;
-        const onPath = cached?.some(n => n.x === gx && n.y === gy);
-        if (!cached || !cached.length || onPath) {
-            const p = astar(
-                state.map.start,
-                state.map.end,
-                (x, y) => (x === gx && y === gy) || isBlocked(x, y),
-                state.map.size.cols,
-                state.map.size.rows,
-            );
-            return !!p;
+
+        const dist = state.pathGrid?.dist;
+        const px = cellCenterForMap(state.map, gx, gy);
+        const onPath = state.path?.some(p => p.x === px.x && p.y === px.y);
+        if (!dist || onPath) {
+            const { cols, rows } = state.map.size;
+            const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+            const q = [{ x: start.x, y: start.y }];
+            visited[start.y][start.x] = true;
+            const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            while (q.length) {
+                const cur = q.shift();
+                if (cur.x === end.x && cur.y === end.y) return true;
+                for (const [dx, dy] of dirs) {
+                    const nx = cur.x + dx, ny = cur.y + dy;
+                    if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+                    if (visited[ny][nx]) continue;
+                    if ((nx === gx && ny === gy) || isBlocked(nx, ny)) continue;
+                    if (dist && dist[ny][nx] === Infinity) continue;
+                    visited[ny][nx] = true;
+                    q.push({ x: nx, y: ny });
+                }
+            }
+            return false;
         }
         // tile not on cached path; existing path remains valid
         return true;
@@ -101,6 +130,7 @@ export function createEngine(seedState) {
             targeting: 'first', _cycleIndex: 0,
         };
         state.towers.push(t);
+        towerGrid.set(gridKey(gx, gy), t);
         onGoldChange(-cost, 'place_tower');
         state.selectedTowerId = t.id;
         neighborsSynergy();
@@ -117,6 +147,7 @@ export function createEngine(seedState) {
         const rate = isBasic ? REFUND_RATE.basic : REFUND_RATE.elemental;
         const refund = Math.floor(t.spent * rate);
         state.towers.splice(idx, 1);
+        towerGrid.delete(gridKey(t.gx, t.gy));
         if (state.selectedTowerId === id) state.selectedTowerId = null;
 
         neighborsSynergy();
@@ -236,6 +267,8 @@ export function createEngine(seedState) {
             if (c.hp <= 0 && c.alive) { c.alive = false; }
         }
 
+        rebuildCreepGrid(state);
+
         for (const t of state.towers) { if (!t.ghost) fireTower(state, { onShot, onHit, onCreepDamage }, t, dt); }
 
         updateBullets(state, { onCreepDamage });
@@ -286,6 +319,7 @@ export function createEngine(seedState) {
         state.selectedTowerId = null;
         state.hover = { gx: -1, gy: -1, valid: false };
 
+        rebuildTowerGrid();
         recomputePathingForAll(state, isBlocked);
         onMapChange(getMapInfo());
         return true;
@@ -420,6 +454,7 @@ export function createEngine(seedState) {
     function reset(seed) {
         waves.resetSpawner();
         resetState(state, { autoWaveEnabled: state.autoWaveEnabled, autoWaveDelay: state.autoWaveDelay, seed: state.seed, ...seed });
+        rebuildTowerGrid();
         recomputePathingForAll(state, isBlocked);
         neighborsSynergy();
         onGameReset();

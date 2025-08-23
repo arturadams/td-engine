@@ -2,14 +2,16 @@
 import { EltColor, Status } from './content.js';
 import { takeDamage, applyStatus } from './combat.js';
 import { getEffect } from './effects/index.js';
+import { queryCreeps } from './spatial.js';
 
 export function targetInRange(state, t) {
     const mode = t.targeting || 'first';
+    const candidates = queryCreeps(state, t.x, t.y, t.range);
+    const r2 = t.range * t.range;
 
     if (mode === 'cycle') {
         const inRange = [];
-        const r2 = t.range * t.range;
-        for (const c of state.creeps) {
+        for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
             if (dx * dx + dy * dy <= r2) inRange.push(c);
@@ -25,8 +27,7 @@ export function targetInRange(state, t) {
     let best = null;
     if (mode === 'last') {
         let bestProg = Infinity;
-        const r2 = t.range * t.range;
-        for (const c of state.creeps) {
+        for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
             if (dx * dx + dy * dy <= r2) {
@@ -36,8 +37,7 @@ export function targetInRange(state, t) {
         }
     } else {
         let bestProg = -1;
-        const r2 = t.range * t.range;
-        for (const c of state.creeps) {
+        for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
             if (dx * dx + dy * dy <= r2) {
@@ -54,7 +54,8 @@ function handleNova(state, t, dt) {
     if (t.novaTimer <= 0) {
         t.novaTimer = freq;
         const r = t.range * 0.7, r2 = r * r;
-        for (const c of state.creeps) {
+        const nearby = queryCreeps(state, t.x, t.y, r);
+        for (const c of nearby) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
             if (dx * dx + dy * dy <= r2) applyStatus(c, Status.CHILL, t);
@@ -105,7 +106,8 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
             const dirx = target.x - t.x, diry = target.y - t.y; const len = Math.sqrt(dirx * dirx + diry * diry);
             const nx = dirx / len, ny = diry / len;
             let remaining = t.mod.pierce;
-            for (const c of state.creeps) {
+            const candidates = queryCreeps(state, t.x, t.y, len + 50);
+            for (const c of candidates) {
                 if (c === target || !c.alive) continue;
                 const proj = ((c.x - t.x) * nx + (c.y - t.y) * ny);
                 if (proj > 0 && proj < len + 50) {
@@ -136,7 +138,8 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
     let bounces = 1 + (t.mod.chainBounce || 0); let last = target; let bounced = new Set([last.id]);
     let chainRange = 70 + (t.mod.chainRange || 0);
     while (bounces-- > 0) {
-    const next = state.creeps.find(c => {
+    const candidates = queryCreeps(state, last.x, last.y, chainRange);
+    const next = candidates.find(c => {
         if (!c.alive || bounced.has(c.id)) return false;
         const dx = c.x - last.x, dy = c.y - last.y;
         return dx * dx + dy * dy <= chainRange * chainRange;
