@@ -19,6 +19,8 @@ export function recomputePathingForAll(state, isBlocked) {
     if (npcCells) {
       c.path = npcCells.map(n => cellCenterForMap(state.map, n.x, n.y));
       c.seg = 0; c.t = 0;
+      c.x = c.path[0].x; c.y = c.path[0].y;
+      c._seg = -1;
     }
   }
 }
