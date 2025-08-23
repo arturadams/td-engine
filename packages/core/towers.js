@@ -1,6 +1,7 @@
 // packages/core/towers.js
 import { EltColor, Status } from './content.js';
 import { takeDamage, applyStatus } from './combat.js';
+import { getEffect } from './effects/index.js';
 
 export function targetInRange(state, t) {
     const mode = t.targeting || 'first';
@@ -89,6 +90,7 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
         vy: (dy / dist) * speed,
         ttl: dist / speed,
         color: EltColor[t.elt],
+        effect: getEffect(t.elt),
         fromId: t.id,
         elt: t.elt,
     });
@@ -151,6 +153,7 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
             vy: (dy / dist) * speed,
             ttl: dist / speed,
             color: EltColor[t.elt],
+            effect: getEffect(t.elt),
             elt: t.elt,
         });
 
@@ -178,6 +181,7 @@ function splashStrategy(state, { onShot }, t, target, dmg) {
         color: EltColor[t.elt],
         fromId: t.id,
         mod: t.mod,
+        effect: getEffect(t.elt),
         elt: t.elt,
         status: t.status,
         dmg,
@@ -203,6 +207,7 @@ function siegeStrategy(state, { onShot }, t, target, dmg) {
         color: EltColor[t.elt],
         fromId: t.id,
         mod: t.mod,
+        effect: getEffect(t.elt),
         elt: t.elt,
         status: t.status,
         dmg,
