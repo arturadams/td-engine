@@ -69,6 +69,7 @@
 
         <div class="ml-auto">Gold: <span data-bind="gold">-</span> • Lives: <span data-bind="lives">-</span> • Wave:
           <span data-bind="wave">-</span>
+          <span data-bind="waveTimer" class="ml-1 text-xs opacity-70"></span>
         </div>
       </div>
     </main>
@@ -102,7 +103,7 @@
         <button id="mFast" class="px-3 py-2 border rounded text-sm">FF</button>
       </div>
       <div class="text-xs opacity-80">Gold <span data-bind="gold">-</span> • Lives <span data-bind="lives">-</span> •
-        Wave <span data-bind="wave">-</span></div>
+        Wave <span data-bind="wave">-</span><span data-bind="waveTimer" class="ml-1"></span></div>
       <div class="grid grid-cols-3 gap-2 ml-2">
         <button data-elt="ARCHER" class="px-3 py-2 border rounded text-xs">Archer</button>
         <button data-elt="SIEGE" class="px-3 py-2 border rounded text-xs">Siege</button>

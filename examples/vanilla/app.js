@@ -180,13 +180,18 @@ const binds = {
   gold: Array.from(document.querySelectorAll('[data-bind="gold"]')),
   lives: Array.from(document.querySelectorAll('[data-bind="lives"]')),
   wave: Array.from(document.querySelectorAll('[data-bind="wave"]')),
+  waveTimer: Array.from(document.querySelectorAll('[data-bind="waveTimer"]')),
 };
+
+let waveTime = 0;
+let waveRunning = false;
 
 function syncHud() {
   const h = buildHudSnapshot(engine.state);
   binds.gold.forEach(el => el.textContent = h.gold);
   binds.lives.forEach(el => el.textContent = h.lives);
   binds.wave.forEach(el => el.textContent = h.wave);
+  binds.waveTimer.forEach(el => el.textContent = '');
   refreshBuildPalette();
   repaintTowerDetails(false);
 }
@@ -278,7 +283,8 @@ document.getElementById('goRestart')?.addEventListener('click', () => {
 // ---------- Event-driven UI refresh ----------
 engine.hook('goldChange', () => syncHud());
 engine.hook('creepKill', () => syncHud());
-engine.hook('waveEnd', () => syncHud());
+engine.hook('waveStart', () => { waveTime = 0; waveRunning = true; });
+engine.hook('waveEnd', () => { waveRunning = false; waveTime = 0; syncHud(); });
 engine.hook('lifeChange', () => syncHud());
 
 engine.hook('mapChange', ({ size }) => {
@@ -387,6 +393,14 @@ function loop(now) {
   if (!engine.state.paused) {
     engine.step(dt);
     renderer.render(engine.state, dt);
+    if (waveRunning) waveTime += dt;
+  }
+  if (waveRunning) {
+    binds.waveTimer.forEach(el => el.textContent = waveTime.toFixed(1) + 's');
+  } else if (engine.state.autoWaveEnabled && engine.state._autoWaveTimer >= 0) {
+    binds.waveTimer.forEach(el => el.textContent = 'Next ' + engine.state._autoWaveTimer.toFixed(1) + 's');
+  } else {
+    binds.waveTimer.forEach(el => el.textContent = '');
   }
 }
 engine.loadMap(twistMap);
