@@ -17,6 +17,7 @@ export const Elt = {
   CANNON: 'SIEGE',
   EARTH: 'EARTH',
   WIND: 'WIND',
+  WATER: 'WATER',
   ARCANE: 'ARCANE'
 };
 export const Status = {
@@ -40,6 +41,7 @@ export const ELEMENTS = [
   { key: 'POISON', color: '#22c55e', type: 'bolt', status: Status.POISON },
   { key: 'EARTH', color: '#a3a3a3', type: 'splash', status: Status.BRITTLE },
   { key: 'WIND', color: '#60a5fa', type: 'bolt', status: Status.EXPOSED },
+  { key: 'WATER', color: '#3b82f6', type: 'splash' },
   { key: 'ARCANE', color: '#be123c', type: 'bolt', status: Status.MANA_BURN }
 ];
 
@@ -77,6 +79,7 @@ export const COST = {
   POISON: 95,
   EARTH: 100,
   WIND: 100,
+  WATER: 90,
   ARCANE: 120
 };
 export const UNLOCK_TIERS = [2, 4, 6];
@@ -86,13 +89,13 @@ export const ResistProfiles = {
   Grunt: {
     hp: 95,
     speed: 40,
-    resist: { FIRE: 0.1, ICE: 0, LIGHT: 0, POISON: 0, EARTH: 0, WIND: 0, ARCANE: 0 },
+    resist: { FIRE: 0.1, ICE: 0, LIGHT: 0, POISON: 0, EARTH: 0, WIND: 0, WATER: 0, ARCANE: 0 },
     gold: 8
   },
   Runner: {
     hp: 70,
     speed: 70,
-    resist: { FIRE: 0, ICE: 0.1, LIGHT: 0, POISON: 0, EARTH: 0, WIND: 0, ARCANE: 0 },
+    resist: { FIRE: 0, ICE: 0.1, LIGHT: 0, POISON: 0, EARTH: 0, WIND: 0, WATER: 0, ARCANE: 0 },
     gold: 7
   },
   Tank: {
@@ -105,6 +108,7 @@ export const ResistProfiles = {
       POISON: 0.15,
       EARTH: 0.15,
       WIND: 0.15,
+      WATER: 0.15,
       ARCANE: 0.15
     },
     gold: 16
@@ -112,7 +116,7 @@ export const ResistProfiles = {
   Shield: {
     hp: 120,
     speed: 42,
-    resist: { FIRE: 0.25, ICE: 0.1, LIGHT: 0.25, POISON: 0, EARTH: 0.2, WIND: 0.2, ARCANE: 0 },
+    resist: { FIRE: 0.25, ICE: 0.1, LIGHT: 0.25, POISON: 0, EARTH: 0.2, WIND: 0.2, WATER: 0, ARCANE: 0 },
     gold: 10
   },
   Boss: {
@@ -125,6 +129,7 @@ export const ResistProfiles = {
       POISON: 0.2,
       EARTH: 0.2,
       WIND: 0.2,
+      WATER: 0.2,
       ARCANE: 0.2
     },
     gold: 90
@@ -143,6 +148,7 @@ export const BLUEPRINT = {
   POISON: { range: 120, firerate: 1.0, dmg: 8, type: 'bolt', status: Status.POISON },
   EARTH: { range: 135, firerate: 0.9, dmg: 22, type: 'splash', status: Status.BRITTLE },
   WIND: { range: 160, firerate: 0.65, dmg: 16, type: 'bolt', status: Status.EXPOSED },
+  WATER: { range: 125, firerate: 0.9, dmg: 14, type: 'splash', status: null },
   ARCANE: { range: 145, firerate: 0.75, dmg: 18, type: 'bolt', status: Status.MANA_BURN }
 };
 

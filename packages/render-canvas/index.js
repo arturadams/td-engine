@@ -3,6 +3,7 @@
 // plus calls to your existing entity renderers.
 
 import { TILE, EltColor } from '../core/content.js';
+import { drawAquarelleBullet } from './aquarelle.js';
 
 export function createCanvasRenderer({ ctx, engine, options = {} }) {
   const opts = {
@@ -202,6 +203,10 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
           ctx.bezierCurveTo(3, -2, 3, 4, 0, 5);
           ctx.bezierCurveTo(-3, 4, -3, -2, 0, -5);
           ctx.fill();
+          break;
+        }
+        case 'WATER': {
+          drawAquarelleBullet(ctx, { radius: b.r || 6, color });
           break;
         }
         case 'ARCHER': {
