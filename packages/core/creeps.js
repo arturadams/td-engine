@@ -2,14 +2,16 @@
 // Use map.start/end and map.size for pathing
 
 import { cellCenterForMap } from './map.js';
-import { astar } from './pathfinding.js';
+import { astar, bfs } from './pathfinding.js';
 import { tickStatusesAndCombos } from './combat.js';
 import { getDeathFx } from './deaths/index.js';
 
 export function recomputePathingForAll(state, isBlocked) {
   const { start, end, size } = state.map;
-  const p = astar(start, end, isBlocked, size.cols, size.rows);
-  state.path = p ? p.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
+  const { dist, path } = bfs(start, end, isBlocked, size.cols, size.rows);
+  state.pathCells = path || [];
+  state.path = path ? path.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
+  state.dist = dist;
   for (const c of state.creeps) {
     const startCell = toCell(state, c.x, c.y);
     const blocker = (gx, gy) => (gx === startCell.gx && gy === startCell.gy) ? false : isBlocked(gx, gy);

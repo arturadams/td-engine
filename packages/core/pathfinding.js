@@ -30,3 +30,45 @@ export function astar(start, end, isBlocked, cols, rows) {
     }
     return null;
 }
+
+// Simple BFS returning both a distance map and shortest path.
+// Distances use Infinity for unreachable cells.
+export function bfs(start, end, isBlocked, cols, rows) {
+    const inBounds = (x, y) => x >= 0 && y >= 0 && x < cols && y < rows;
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+    const dist = Array.from({ length: rows }, () => Array(cols).fill(Infinity));
+    const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
+    const q = [];
+    let qi = 0;
+
+    dist[start.y][start.x] = 0;
+    q.push({ x: start.x, y: start.y });
+
+    while (qi < q.length) {
+        const cur = q[qi++];
+        if (cur.x === end.x && cur.y === end.y) break;
+        for (const [dx, dy] of dirs) {
+            const nx = cur.x + dx, ny = cur.y + dy;
+            if (!inBounds(nx, ny) || isBlocked(nx, ny)) continue;
+            if (dist[ny][nx] !== Infinity) continue;
+            dist[ny][nx] = dist[cur.y][cur.x] + 1;
+            prev[ny][nx] = { x: cur.x, y: cur.y };
+            q.push({ x: nx, y: ny });
+        }
+    }
+
+    let path = null;
+    if (dist[end.y][end.x] !== Infinity) {
+        path = [];
+        let cur = { x: end.x, y: end.y };
+        while (cur) {
+            path.push({ x: cur.x, y: cur.y });
+            const p = prev[cur.y][cur.x];
+            cur = p;
+        }
+        path.reverse();
+    }
+
+    return { dist, path };
+}

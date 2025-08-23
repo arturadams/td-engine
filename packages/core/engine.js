@@ -7,7 +7,7 @@ import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
 import { updateBullets } from './bullets.js';
 import { updateParticles } from './particles.js';
-import { astar } from './pathfinding.js';
+import { bfs } from './pathfinding.js';
 import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
@@ -56,17 +56,17 @@ export function createEngine(seedState) {
         if (gx === end.x && gy === end.y) return false;
         if (!canBuildCell(gx, gy)) return false;
         if (state.towers.some(t => t.gx === gx && t.gy === gy)) return false;
-        const cached = state.path;
+        const cached = state.pathCells;
         const onPath = cached?.some(n => n.x === gx && n.y === gy);
         if (!cached || !cached.length || onPath) {
-            const p = astar(
+            const { path } = bfs(
                 state.map.start,
                 state.map.end,
                 (x, y) => (x === gx && y === gy) || isBlocked(x, y),
                 state.map.size.cols,
                 state.map.size.rows,
             );
-            return !!p;
+            return !!path;
         }
         // tile not on cached path; existing path remains valid
         return true;

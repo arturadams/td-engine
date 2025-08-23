@@ -40,8 +40,9 @@ export function createInitialState(seedState) {
         selectedTowerId: null,
         hover: { gx: -1, gy: -1, valid: false },
 
-        path: [],
-        pathPx: [],
+        path: [],        // pixel coordinates for main creep path
+        pathCells: [],   // grid coordinate path
+        dist: [],        // cached distance map
 
         gameOver: false,
         stats: { leaks: 0, leakedByWave: {}, killsByTower: {}, wavesCleared: 0 },
@@ -67,7 +68,7 @@ export function resetState(state, keep = {}) {
 
         towers: [], creeps: [], bullets: [], events: [], particles: [],
         selectedTowerId: null, hover: { gx: -1, gy: -1, valid: false },
-        path: [], pathPx: [], gameOver: false,
+        path: [], pathCells: [], dist: [], gameOver: false,
         stats: { leaks: 0, leakedByWave: {}, killsByTower: {}, wavesCleared: 0 },
     });
 
