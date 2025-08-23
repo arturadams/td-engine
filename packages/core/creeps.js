@@ -86,7 +86,7 @@ export function advanceCreep(state, c, onLeak) {
 
   const speed = c.speed * slowMul;
   let A = c.path[c.seg], B = c.path[c.seg + 1];
-  if (!B) { c.alive = false; state.lives--; onLeak(); return; }
+  if (!B) { c.alive = false; onLeak(); return; }
 
   if (c._seg !== c.seg) {
     const vx = B.x - A.x, vy = B.y - A.y;

@@ -293,16 +293,8 @@ export function createEngine(seedState) {
 
 
     function startWave() {
-        state.wave += 1;
-        onWaveStart();
         return waves.startWave();
     }
-
-    function _waveStartInternal() {
-        state.wave++;
-        onWaveStart();
-    }
-    engine._waveStartInternal = _waveStartInternal;
 
     function loadMap(mapConfig) {
         validateMap(mapConfig);
