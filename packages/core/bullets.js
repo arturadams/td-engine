@@ -67,7 +67,7 @@ function spawnImpact(state, b) {
 export function updateBullets(state, { onCreepDamage }) {
     for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
-        const effect = getEffect(b.elt);
+        const effect = b.effect;
         effect.trail(state, b);
         b.ttl -= state.dt;
         b.x += b.vx * state.dt;
