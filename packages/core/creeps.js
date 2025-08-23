@@ -2,20 +2,78 @@
 // Use map.start/end and map.size for pathing
 
 import { cellCenterForMap } from './map.js';
-import { astar } from './pathfinding.js';
 import { tickStatusesAndCombos } from './combat.js';
 import { getDeathFx } from './deaths/index.js';
 
 export function recomputePathingForAll(state, isBlocked) {
   const { start, end, size } = state.map;
-  const p = astar(start, end, isBlocked, size.cols, size.rows);
-  state.path = p ? p.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
+  const { dist, prev } = buildPredecessorGrid(end, isBlocked, size.cols, size.rows);
+  state.pathGrid = { dist, prev };
+
+  const mainPathCells = reconstructPath(start, dist, prev, size);
+  state.path = mainPathCells ? mainPathCells.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
+
   for (const c of state.creeps) {
     const startCell = toCell(state, c.x, c.y);
-    const blocker = (gx, gy) => (gx === startCell.gx && gy === startCell.gy) ? false : isBlocked(gx, gy);
-    const npcPath = astar({ x: startCell.gx, y: startCell.gy }, end, blocker, size.cols, size.rows);
-    if (npcPath) { c.path = npcPath.map(n => cellCenterForMap(state.map, n.x, n.y)); c.seg = 0; c.t = 0; }
+    const npcCells = reconstructPath({ x: startCell.gx, y: startCell.gy }, dist, prev, size);
+    if (npcCells) {
+      const points = npcCells.map(n => cellCenterForMap(state.map, n.x, n.y));
+      points[0] = { x: c.x, y: c.y };
+      c.path = points;
+      c.seg = 0; c.t = 0; c._seg = -1;
+    }
   }
+}
+
+function buildPredecessorGrid(end, isBlocked, cols, rows) {
+  const dist = Array.from({ length: rows }, () => Array(cols).fill(Infinity));
+  const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
+  const q = [{ x: end.x, y: end.y }];
+  dist[end.y][end.x] = 0;
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  while (q.length) {
+    const cur = q.shift();
+    const d = dist[cur.y][cur.x] + 1;
+    for (const [dx,dy] of dirs) {
+      const nx = cur.x + dx, ny = cur.y + dy;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+      if (isBlocked(nx, ny)) continue;
+      if (dist[ny][nx] !== Infinity) continue;
+      dist[ny][nx] = d;
+      prev[ny][nx] = cur;
+      q.push({ x: nx, y: ny });
+    }
+  }
+  return { dist, prev };
+}
+
+function reconstructPath(start, dist, prev, size) {
+  const { cols, rows } = size;
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  let x = start.x, y = start.y;
+  const path = [{ x, y }];
+
+  if (x < 0 || y < 0 || x >= cols || y >= rows) return null;
+
+  if (dist[y][x] === Infinity) {
+    let best = null, bestD = Infinity;
+    for (const [dx, dy] of dirs) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+      if (dist[ny][nx] < bestD) { bestD = dist[ny][nx]; best = { x: nx, y: ny }; }
+    }
+    if (!best || bestD === Infinity) return null;
+    x = best.x; y = best.y;
+    path.push({ x, y });
+  }
+
+  while (prev[y][x]) {
+    const p = prev[y][x];
+    x = p.x; y = p.y;
+    path.push({ x, y });
+  }
+
+  return path;
 }
 
 export function advanceCreep(state, c, onLeak) {
