@@ -19,6 +19,17 @@ export function createEngine(seedState) {
 
     const state = createInitialState(seedState);
 
+    // spatial index for towers keyed by grid coords "gx,gy"
+    const towerGrid = new Map();
+    const gridKey = (gx, gy) => `${gx},${gy}`;
+    const rebuildTowerGrid = () => {
+        towerGrid.clear();
+        for (const t of state.towers) {
+            towerGrid.set(gridKey(t.gx, t.gy), t);
+        }
+    };
+    rebuildTowerGrid();
+
     // map helpers (bound to current state.map)
     const inBounds = (gx, gy) =>
         gx >= 0 && gy >= 0 && gx < state.map.size.cols && gy < state.map.size.rows;
@@ -38,13 +49,18 @@ export function createEngine(seedState) {
 
     function neighborsSynergy() {
         const r2 = (2 * TILE + 1) * (2 * TILE + 1);
+        const range = 2; // in tiles
         for (const t of state.towers) {
-            const neighbors = state.towers.filter(o => {
-                if (o === t) return false;
-                const dx = o.x - t.x, dy = o.y - t.y;
-                return dx * dx + dy * dy <= r2;
-            });
-            const uniq = new Set(neighbors.map(n => n.elt));
+            const uniq = new Set();
+            for (let dx = -range; dx <= range; dx++) {
+                for (let dy = -range; dy <= range; dy++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const n = towerGrid.get(gridKey(t.gx + dx, t.gy + dy));
+                    if (!n) continue;
+                    const px = n.x - t.x, py = n.y - t.y;
+                    if (px * px + py * py <= r2) uniq.add(n.elt);
+                }
+            }
             t.synergy = 0.08 * uniq.size;
         }
     }
@@ -101,6 +117,7 @@ export function createEngine(seedState) {
             targeting: 'first', _cycleIndex: 0,
         };
         state.towers.push(t);
+        towerGrid.set(gridKey(gx, gy), t);
         onGoldChange(-cost, 'place_tower');
         state.selectedTowerId = t.id;
         neighborsSynergy();
@@ -117,6 +134,7 @@ export function createEngine(seedState) {
         const rate = isBasic ? REFUND_RATE.basic : REFUND_RATE.elemental;
         const refund = Math.floor(t.spent * rate);
         state.towers.splice(idx, 1);
+        towerGrid.delete(gridKey(t.gx, t.gy));
         if (state.selectedTowerId === id) state.selectedTowerId = null;
 
         neighborsSynergy();
@@ -286,6 +304,7 @@ export function createEngine(seedState) {
         state.selectedTowerId = null;
         state.hover = { gx: -1, gy: -1, valid: false };
 
+        rebuildTowerGrid();
         recomputePathingForAll(state, isBlocked);
         onMapChange(getMapInfo());
         return true;
@@ -420,6 +439,7 @@ export function createEngine(seedState) {
     function reset(seed) {
         waves.resetSpawner();
         resetState(state, { autoWaveEnabled: state.autoWaveEnabled, autoWaveDelay: state.autoWaveDelay, seed: state.seed, ...seed });
+        rebuildTowerGrid();
         recomputePathingForAll(state, isBlocked);
         neighborsSynergy();
         onGameReset();
