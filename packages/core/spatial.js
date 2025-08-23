@@ -34,7 +34,7 @@ export function rebuildCreepGrid(state) {
 export function queryCreeps(state, x, y, r) {
     const grid = state.creepGrid;
     const cellSize = state.creepCellSize || CELL;
-    if (!grid) return state.creeps;
+    if (!grid) return state.creeps.slice();
     const minGx = Math.floor((x - r) / cellSize);
     const maxGx = Math.floor((x + r) / cellSize);
     const minGy = Math.floor((y - r) / cellSize);
@@ -43,7 +43,9 @@ export function queryCreeps(state, x, y, r) {
     for (let gx = minGx; gx <= maxGx; gx++) {
         for (let gy = minGy; gy <= maxGy; gy++) {
             const cell = grid.get(gx + ',' + gy);
-            if (cell) result.push(...cell);
+            if (cell) {
+                for (const c of cell) result.push(c);
+            }
         }
     }
     return result;
