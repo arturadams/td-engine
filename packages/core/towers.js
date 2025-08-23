@@ -11,17 +11,37 @@ export function targetInRange(state, t) {
 
     if (mode === 'cycle') {
         const inRange = [];
+        let hasPrev = false;
         for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
-            if (dx * dx + dy * dy <= r2) inRange.push(c);
+            if (dx * dx + dy * dy <= r2) {
+                inRange.push(c);
+                if (c.id === t._cycleId) hasPrev = true;
+            }
         }
-        if (!inRange.length) return null;
-        inRange.sort((a, b) => (b.seg + b.t) - (a.seg + a.t));
-        t._cycleIndex = (t._cycleIndex || 0) % inRange.length;
-        const target = inRange[t._cycleIndex];
-        t._cycleIndex = (t._cycleIndex + 1) % inRange.length;
-        return target;
+        if (!inRange.length) { t._cycleProg = null; t._cycleId = null; return null; }
+        let lastProg = t._cycleProg;
+        let lastId = t._cycleId;
+        if (!hasPrev) { lastProg = -Infinity; lastId = -Infinity; }
+        let next = null; let nextProg = Infinity; let nextId = Infinity;
+        let first = null; let firstProg = Infinity; let firstId = Infinity;
+        for (const c of inRange) {
+            const prog = c.seg + c.t;
+            const id = c.id;
+            if (prog > lastProg || (prog === lastProg && id > lastId)) {
+                if (prog < nextProg || (prog === nextProg && id < nextId)) {
+                    next = c; nextProg = prog; nextId = id;
+                }
+            }
+            if (prog < firstProg || (prog === firstProg && id < firstId)) {
+                first = c; firstProg = prog; firstId = id;
+            }
+        }
+        if (!next) { next = first; nextProg = firstProg; nextId = firstId; }
+        if (!next) { t._cycleProg = null; t._cycleId = null; return null; }
+        t._cycleProg = nextProg; t._cycleId = nextId;
+        return next;
     }
 
     let best = null;
