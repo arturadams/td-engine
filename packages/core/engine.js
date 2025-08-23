@@ -80,10 +80,11 @@ export function createEngine(seedState) {
             const { cols, rows } = state.map.size;
             const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
             const q = [{ x: start.x, y: start.y }];
+            let head = 0;
             visited[start.y][start.x] = true;
             const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-            while (q.length) {
-                const cur = q.shift();
+            while (head < q.length) {
+                const cur = q[head++];
                 if (cur.x === end.x && cur.y === end.y) return true;
                 for (const [dx, dy] of dirs) {
                     const nx = cur.x + dx, ny = cur.y + dy;
