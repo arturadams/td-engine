@@ -6,17 +6,28 @@ const CELL = 40; // size of each grid cell in pixels
 // Rebuild the grid for all alive creeps. Call once per tick after movement.
 export function rebuildCreepGrid(state) {
     state.creepCellSize = CELL;
-    const grid = new Map();
+    let grid = state.creepGrid;
+    if (!grid) {
+        grid = state.creepGrid = new Map();
+    }
+    const pool = state.creepCellPool || (state.creepCellPool = []);
+    for (const cell of grid.values()) {
+        cell.length = 0;
+        pool.push(cell);
+    }
+    grid.clear();
     for (const c of state.creeps) {
         if (!c.alive) continue;
         const gx = Math.floor(c.x / CELL);
         const gy = Math.floor(c.y / CELL);
         const key = gx + ',' + gy;
         let cell = grid.get(key);
-        if (!cell) { cell = []; grid.set(key, cell); }
+        if (!cell) {
+            cell = pool.pop() || [];
+            grid.set(key, cell);
+        }
         cell.push(c);
     }
-    state.creepGrid = grid;
 }
 
 // Return all creeps within radius r of point (x, y) using the grid.
