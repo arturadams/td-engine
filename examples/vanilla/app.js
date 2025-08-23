@@ -214,6 +214,9 @@ async function repaintTowerDetails(force = true) {
       <div>Range</div> <div class="font-mono text-right">${vm.range}</div>
       <div>Kills</div> <div class="font-mono text-right">${vm.kills}</div>
     </div>
+    <div id="tiTarget" class="mt-2 flex flex-wrap gap-2 text-xs">
+      ${['first','last','cycle'].map(m => `<button data-target="${m}" class="px-2 py-1 border rounded ${vm.targeting === m ? 'bg-indigo-600 text-white' : ''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}
+    </div>
     <div class="mt-2 flex flex-wrap gap-2">
       <button id="tiUpg" class="px-2 py-1 border rounded text-xs ${vm.canUpgrade ? '' : 'opacity-50 pointer-events-none'}">
         Level Up (${vm.upgCost})
@@ -234,6 +237,11 @@ async function repaintTowerDetails(force = true) {
   document.getElementById('tiSell')?.addEventListener('click', () => {
     engine.sellTower(vm.id); haptic(15); syncHud(); repaintTowerDetails();
   });
+  document.querySelectorAll('#tiTarget [data-target]')
+    .forEach(btn => btn.addEventListener('click', () => {
+      engine.setTargeting(btn.dataset.target);
+      repaintTowerDetails();
+    }));
 
   const evoWrap = document.getElementById('tiEvo');
   if (vm.nextTierIndex >= 0) {
