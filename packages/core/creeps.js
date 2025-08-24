@@ -17,9 +17,10 @@ export function recomputePathingForAll(state, isBlocked) {
     const startCell = toCell(state, c.x, c.y);
     const npcCells = reconstructPath({ x: startCell.gx, y: startCell.gy }, dist, prev, size);
     if (npcCells) {
-      c.path = npcCells.map(n => cellCenterForMap(state.map, n.x, n.y));
+      const path = npcCells.map(n => cellCenterForMap(state.map, n.x, n.y));
+      path[0] = { x: c.x, y: c.y };
+      c.path = path;
       c.seg = 0; c.t = 0;
-      c.x = c.path[0].x; c.y = c.path[0].y;
       c._seg = -1;
     }
   }
