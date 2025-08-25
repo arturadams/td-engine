@@ -11,11 +11,13 @@ import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
 import { rebuildCreepGrid } from './spatial.js';
+import { resolveConfig } from './config.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-export function createEngine(seedState) {
+export function createEngine(seedState, userConfig) {
     const engine = {};
+    engine.config = resolveConfig(userConfig);
 
     const state = createInitialState(seedState);
 
