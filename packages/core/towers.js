@@ -48,23 +48,29 @@ export function targetInRange(state, t) {
 
     let best = null;
     if (mode === 'last') {
-        let bestProg = Infinity;
+        let bestProg = Infinity; let bestDist = Infinity;
         for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
-            if (dx * dx + dy * dy <= r2) {
-                const prog = c.seg + c.t + (!c.path ? c.x / 1e6 : 0);
-                if (prog < bestProg) { best = c; bestProg = prog; }
+            const dist = dx * dx + dy * dy;
+            if (dist <= r2) {
+                const prog = c.seg + c.t;
+                if (prog < bestProg || (prog === bestProg && dist < bestDist)) {
+                    best = c; bestProg = prog; bestDist = dist;
+                }
             }
         }
     } else {
-        let bestProg = -1;
+        let bestProg = -1; let bestDist = -1;
         for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
-            if (dx * dx + dy * dy <= r2) {
-                const prog = c.seg + c.t + (!c.path ? c.x / 1e6 : 0);
-                if (prog > bestProg) { best = c; bestProg = prog; }
+            const dist = dx * dx + dy * dy;
+            if (dist <= r2) {
+                const prog = c.seg + c.t;
+                if (prog > bestProg || (prog === bestProg && dist > bestDist)) {
+                    best = c; bestProg = prog; bestDist = dist;
+                }
             }
         }
     }
@@ -162,12 +168,12 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
     let bounces = 1 + (t.mod.chainBounce || 0); let last = target; let bounced = new Set([last.id]);
     let chainRange = 70 + (t.mod.chainRange || 0);
     while (bounces-- > 0) {
-    const candidates = queryCreeps(state, last.x, last.y, chainRange);
-    const next = candidates.find(c => {
-        if (!c.alive || bounced.has(c.id)) return false;
-        const dx = c.x - last.x, dy = c.y - last.y;
-        return dx * dx + dy * dy <= chainRange * chainRange;
-    });
+        const candidates = queryCreeps(state, last.x, last.y, chainRange);
+        const next = candidates.find(c => {
+            if (!c.alive || bounced.has(c.id)) return false;
+            const dx = c.x - last.x, dy = c.y - last.y;
+            return dx * dx + dy * dy <= chainRange * chainRange;
+        });
         if (!next) break; bounced.add(next.id);
 
         const dx = next.x - last.x, dy = next.y - last.y;

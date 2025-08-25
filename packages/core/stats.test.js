@@ -14,6 +14,7 @@ describe('stats', () => {
     // simulate a kill
     handlers.creepKill[0]({ type: 'Grunt', gold: 1 });
     const summary = stats.summary();
-    expect(summary.totals.creepsKilled).toBe(1);
+    // kills are reported inside totals.creeps
+    expect(summary.totals.creeps.killed).toBe(1);
   });
 });
