@@ -13,9 +13,9 @@ When creating the engine you may specify configuration options. The
 ```js
 import { createEngine } from '@your-scope/td-core/engine.js';
 
-// Use WebGPU renderer if available
-const engine = createEngine(null, { renderer: 'webgpu' });
+// Defaults to the WebGPU renderer; override for Canvas
+const engine = createEngine(null, { renderer: 'canvas' });
 ```
 
-Valid renderers are `canvas` (default) and `webgpu`. Unknown values
-fall back to `canvas`.
+Valid renderers are `webgpu` (default) and `canvas`. Unknown values
+fall back to `webgpu`.
