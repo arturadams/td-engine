@@ -16,7 +16,7 @@ export function goldForKill(type, wave, baseGold) {
     // keep kills meaningful later, but not runaway
     const growth = 1 + 0.06 * wave;
     const bossBonus = type === 'Boss' ? 3 : 1;
-    return Math.max(1, Math.round(baseGold * growth * bossBonus));
+    return Math.max(1, Math.ceil(baseGold * growth * bossBonus));
 }
 
 // simple pack composer — you can swap this for a full “theme + affixes” composer later

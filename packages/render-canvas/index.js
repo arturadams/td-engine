@@ -111,12 +111,17 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
       const off = document.createElement('canvas');
       off.width = 8; off.height = 8;
       const c2 = off.getContext('2d');
-      c2.strokeStyle = 'rgba(220, 38, 38, .35)'; // red-600 @ 35%
-      c2.lineWidth = 1;
-      c2.beginPath();
-      c2.moveTo(0, 8); c2.lineTo(8, 0);
-      c2.stroke();
-      drawBuildableMask._pat = ctx.createPattern(off, 'repeat');
+      if (c2) {
+        c2.strokeStyle = 'rgba(220, 38, 38, .35)'; // red-600 @ 35%
+        c2.lineWidth = 1;
+        c2.beginPath();
+        c2.moveTo(0, 8); c2.lineTo(8, 0);
+        c2.stroke();
+        drawBuildableMask._pat = ctx.createPattern(off, 'repeat');
+      } else {
+        // fallback solid fill when canvas 2D context unavailable
+        drawBuildableMask._pat = 'rgba(220, 38, 38, .35)';
+      }
     }
 
     c.save();

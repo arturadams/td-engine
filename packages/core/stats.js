@@ -103,6 +103,9 @@ export function attachStats(engine, { waveCap = 50 } = {}) {
                     goldEarned: stats.totals.goldEarned,
                     goldSpent: stats.totals.goldSpent,
                     damage: Math.round(stats.totals.damage),
+                    creepsSpawned: stats.totals.creepsSpawned,
+                    creepsKilled: stats.totals.creepsKilled,
+                    creepsLeaked: stats.totals.creepsLeaked,
                     creeps: {
                         spawned: stats.totals.creepsSpawned,
                         killed: stats.totals.creepsKilled,

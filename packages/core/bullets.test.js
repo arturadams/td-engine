@@ -83,6 +83,8 @@ describe('bullets via engine.step', () => {
 
   it('pierces through multiple creeps', () => {
     const engine = createEngine();
+    // ensure deterministic hits
+    engine.state.rng = () => 0;
     const c1 = makeCreep('c1', 40, 0, 0.5);
     const c2 = makeCreep('c2', 80, 0, 0.1);
     engine.state.creeps.push(c1, c2);

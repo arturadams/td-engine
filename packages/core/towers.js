@@ -28,7 +28,8 @@ export function targetInRange(state, t) {
         let next = null; let nextProg = Infinity; let nextId = Infinity;
         let first = null; let firstProg = Infinity; let firstId = Infinity;
         for (const c of inRange) {
-            const prog = c.seg + c.t;
+            // progress along the path; fall back to position if path not set
+            const prog = c.seg + c.t + (!c.path ? c.x / 1e6 : 0);
             const id = c.id;
             if (prog > lastProg || (prog === lastProg && id > lastId)) {
                 if (prog < nextProg || (prog === nextProg && id < nextId)) {
@@ -167,12 +168,12 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
     let bounces = 1 + (t.mod.chainBounce || 0); let last = target; let bounced = new Set([last.id]);
     let chainRange = 70 + (t.mod.chainRange || 0);
     while (bounces-- > 0) {
-    const candidates = queryCreeps(state, last.x, last.y, chainRange);
-    const next = candidates.find(c => {
-        if (!c.alive || bounced.has(c.id)) return false;
-        const dx = c.x - last.x, dy = c.y - last.y;
-        return dx * dx + dy * dy <= chainRange * chainRange;
-    });
+        const candidates = queryCreeps(state, last.x, last.y, chainRange);
+        const next = candidates.find(c => {
+            if (!c.alive || bounced.has(c.id)) return false;
+            const dx = c.x - last.x, dy = c.y - last.y;
+            return dx * dx + dy * dy <= chainRange * chainRange;
+        });
         if (!next) break; bounced.add(next.id);
 
         const dx = next.x - last.x, dy = next.y - last.y;
