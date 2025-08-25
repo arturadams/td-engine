@@ -4,7 +4,7 @@
 
 import { TILE, EltColor } from '../core/content.js';
 
-export function createCanvasRenderer({ ctx, engine, options = {} }) {
+export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }) {
   const opts = {
     showGrid: true,
     showBlocked: true,
@@ -14,6 +14,30 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     cacheMap: true,
     ...options,
   };
+
+  // sprite loading
+  const creepSprites = {};
+  const towerSprites = {};
+
+  function loadImage(src) {
+    const img = new Image();
+    img.src = src;
+    return img;
+  }
+
+  if (sprites.creeps) {
+    for (const [key, src] of Object.entries(sprites.creeps)) {
+      creepSprites[key] = loadImage(src);
+    }
+  }
+  if (sprites.towers) {
+    for (const [key, src] of Object.entries(sprites.towers)) {
+      towerSprites[key] = loadImage(src);
+    }
+  }
+
+  const getCreepSprite = type => creepSprites[type] || creepSprites.default;
+  const getTowerSprite = elt => towerSprites[elt] || towerSprites.default;
 
   // --- helpers -------------------------------------------------------------
 
@@ -112,10 +136,14 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     for (const c of state.creeps) {
       ctx.save();
       ctx.translate(c.x, c.y);
-
-      // body
-      ctx.fillStyle = '#e5e7eb'; // gray-200
-      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+      const img = getCreepSprite(c.type);
+      if (img && img.complete) {
+        ctx.drawImage(img, -8, -8, 16, 16);
+      } else {
+        // body fallback
+        ctx.fillStyle = '#e5e7eb'; // gray-200
+        ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+      }
 
       // health bar
       const pct = Math.max(0, Math.min(1, c.hp / c.maxhp));
@@ -145,10 +173,15 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       const elt = t.elt || t.kind;
       const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
       const color = EltColor[elt] || extraColors[elt] || '#94a3b8';
-      ctx.fillStyle = color;
-      ctx.shadowColor = color; ctx.shadowBlur = 16;
-      ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
-      ctx.shadowBlur = 0;
+      const img = getTowerSprite(elt);
+      if (img && img.complete) {
+        ctx.drawImage(img, -12, -12, 24, 24);
+      } else {
+        ctx.fillStyle = color;
+        ctx.shadowColor = color; ctx.shadowBlur = 16;
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+      }
 
       // range ring if selected
       if (state.selectedTowerId === t.id) {
