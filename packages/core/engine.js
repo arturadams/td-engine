@@ -12,6 +12,10 @@ import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
 import { rebuildCreepGrid } from './spatial.js';
 import { resolveConfig } from './config.js';
+import { isBlocked as isBlockedImpl, canPlace as canPlaceImpl, placeTower as placeTowerImpl, sellTower as sellTowerImpl, setBuild as setBuildImpl, setHover as setHoverImpl, selectTowerAt as selectTowerAtImpl, gatherNeighbors, neighborsSynergy } from './engine/placement.js';
+import { changeGold, changeLife } from './engine/economy.js';
+import { levelUpSelected as levelUpSelectedImpl, applyEvolution as applyEvolutionImpl, setTargeting as setTargetingImpl } from './engine/upgrades.js';
+import { step as stepImpl } from './engine/step.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -32,217 +36,45 @@ export function createEngine(seedState, userConfig) {
     };
     rebuildTowerGrid();
 
-    // map helpers (bound to current state.map)
-    const inBounds = (gx, gy) =>
-        gx >= 0 && gy >= 0 && gx < state.map.size.cols && gy < state.map.size.rows;
-
     // refreshable reference; will be reassigned on loadMap()
     let canBuildCellRef = makeBuildableChecker(state.map);
     const canBuildCell = (gx, gy) => canBuildCellRef(gx, gy);
 
-    const isBlocked = (gx, gy) => {
-        if (!inBounds(gx, gy)) return true;
-        const { start, end } = state.map;
-        if (gx === start.x && gy === start.y) return false;
-        if (gx === end.x && gy === end.y) return false;
-        if (!canBuildCell(gx, gy)) return true;        // <- uses refreshed checker
-        return towerGrid.has(gridKey(gx, gy));
-    };
-
-    const gatherNeighbors = (gx, gy) => {
-        const range = 2;
-        const out = new Set();
-        for (let dx = -range; dx <= range; dx++) {
-            for (let dy = -range; dy <= range; dy++) {
-                if (dx === 0 && dy === 0) continue;
-                const n = towerGrid.get(gridKey(gx + dx, gy + dy));
-                if (n) out.add(n);
-            }
-        }
-        return out;
-    };
-
-    function neighborsSynergy(targetTowers = state.towers) {
-        const r2 = (2 * TILE + 1) * (2 * TILE + 1);
-        const range = 2; // in tiles
-        for (const t of targetTowers) {
-            if (!t) continue;
-            const uniq = new Set();
-            for (let dx = -range; dx <= range; dx++) {
-                for (let dy = -range; dy <= range; dy++) {
-                    if (dx === 0 && dy === 0) continue;
-                    const n = towerGrid.get(gridKey(t.gx + dx, t.gy + dy));
-                    if (!n) continue;
-                    const px = n.x - t.x, py = n.y - t.y;
-                    if (px * px + py * py <= r2) uniq.add(n.elt);
-                }
-            }
-            t.synergy = 0.08 * uniq.size;
-        }
-    }
-
-    function canPlace(gx, gy) {
-        if (!inBounds(gx, gy)) return false;
-        const { start, end } = state.map;
-        if (gx === start.x && gy === start.y) return false;
-        if (gx === end.x && gy === end.y) return false;
-        if (!canBuildCell(gx, gy)) return false;
-        if (towerGrid.has(gridKey(gx, gy))) return false;
-
-        const dist = state.pathGrid?.dist;
-        const px = cellCenterForMap(state.map, gx, gy);
-        const onPath = state.path?.some(p => p.x === px.x && p.y === px.y);
-        if (!dist || onPath) {
-            const { cols, rows } = state.map.size;
-            const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
-            const q = [{ x: start.x, y: start.y }];
-            let head = 0;
-            visited[start.y][start.x] = true;
-            const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-            while (head < q.length) {
-                const cur = q[head++];
-                if (cur.x === end.x && cur.y === end.y) return true;
-                for (const [dx, dy] of dirs) {
-                    const nx = cur.x + dx, ny = cur.y + dy;
-                    if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-                    if (visited[ny][nx]) continue;
-                    if ((nx === gx && ny === gy) || isBlocked(nx, ny)) continue;
-                    if (dist && dist[ny][nx] === Infinity) continue;
-                    visited[ny][nx] = true;
-                    q.push({ x: nx, y: ny });
-                }
-            }
-            return false;
-        }
-        // tile not on cached path; existing path remains valid
-        return true;
-    }
-
-    // Handle legacy 'CANNON' tower name by normalizing it to 'SIEGE'.
-    const normalizeElt = (e) => (e === 'CANNON' ? Elt.SIEGE : e);
+    const isBlocked = (gx, gy) => isBlockedImpl(state, towerGrid, canBuildCell, gx, gy);
+    const canPlace = (gx, gy) => canPlaceImpl(state, towerGrid, canBuildCell, gx, gy);
+    const neighborsSynergyBound = (targets) => neighborsSynergy(state, towerGrid, targets);
 
     function placeTower(gx, gy, rawElt) {
-        const elt = normalizeElt(rawElt);
-        if (!inBounds(gx, gy)) return { ok: false, reason: 'oob' };
-        if (state.towers.some(t => t.gx === gx && t.gy === gy)) return { ok: false, reason: 'occupied' };
-        const { start, end } = state.map;
-        if (gx === start.x && gy === start.y) return { ok: false, reason: 'start' };
-        if (gx === end.x && gy === end.y) return { ok: false, reason: 'end' };
-        if (!canBuildCell(gx, gy)) return { ok: false, reason: 'not_buildable' };
-        if (!canPlace(gx, gy)) return { ok: false, reason: 'blocks_path' };
-
-        // Prevent placement on tiles currently occupied by a creep.
-        for (const c of state.creeps) {
-            if (!c.alive) continue;
-            const cgx = Math.floor(c.x / TILE);
-            const cgy = Math.floor(c.y / TILE);
-            if (cgx === gx && cgy === gy) {
-                return { ok: false, reason: 'occupied_by_creep' };
-            }
-        }
-
-        const cost = COST[elt];
-        const bp = BLUEPRINT[elt];
-        if (cost == null || !bp) return { ok: false, reason: 'invalid_tower' };
-        if (state.gold < cost) return { ok: false, reason: 'gold' };
-
-        const t = {
-            id: uuid(), gx, gy,
-            x: gx * TILE + TILE / 2, y: gy * TILE + TILE / 2,
-            elt, lvl: 1, xp: 0, tree: [],
-            range: bp.range, firerate: bp.firerate, dmg: bp.dmg, type: bp.type, status: bp.status,
-            cooldown: 0, spent: cost,
-            mod: { dmg: 0, burn: 0, poison: 0, chill: 0, slowDur: 0, chainBounce: 0, chainRange: 0, stun: 0, aoe: 0, splash: 0, nova: false, resShred: 0, maxStacks: 1, pierce: 0 },
-            synergy: 0, novaTimer: 0, kills: 0, freeTierPicks: 0,
-            targeting: 'first', _cycleIndex: 0,
-        };
-        state.towers.push(t);
-        towerGrid.set(gridKey(gx, gy), t);
-        onGoldChange(-cost, 'place_tower');
-        state.selectedTowerId = t.id;
-        const affected = gatherNeighbors(gx, gy);
-        affected.add(t);
-        neighborsSynergy(affected);
-        recomputePathingForAll(state, isBlocked);
-        onTowerPlace(t, cost);
-        return { ok: true, tower: t };
+        return placeTowerImpl(state, towerGrid, canBuildCell, gx, gy, rawElt, {
+            onGoldChange,
+            recomputePathingForAll,
+            gatherNeighborsFn: gatherNeighbors,
+            neighborsSynergyFn: neighborsSynergy,
+            onTowerPlace,
+        });
     }
 
     function sellTower(id) {
-        const idx = state.towers.findIndex(t => t.id === id);
-        if (idx < 0) return false;
-        const t = state.towers[idx];
-        const isBasic = BASIC_TOWERS.includes(t.elt);
-        const rate = isBasic ? REFUND_RATE.basic : REFUND_RATE.elemental;
-        const refund = Math.floor(t.spent * rate);
-        state.towers.splice(idx, 1);
-        towerGrid.delete(gridKey(t.gx, t.gy));
-        if (state.selectedTowerId === id) state.selectedTowerId = null;
-
-        const affected = gatherNeighbors(t.gx, t.gy);
-        neighborsSynergy(affected);
-        recomputePathingForAll(state, isBlocked);
-
-        onGoldChange(+refund, 'sell_tower');
-        onTowerSell(t, refund);
-        return true;
+        return sellTowerImpl(state, towerGrid, id, {
+            onGoldChange,
+            recomputePathingForAll,
+            gatherNeighborsFn: gatherNeighbors,
+            neighborsSynergyFn: neighborsSynergy,
+            onTowerSell,
+            canBuildCell,
+        });
     }
 
-    function setBuild(elt) { state.buildSel = normalizeElt(elt); }
-
-    function setHover(gx, gy) {
-        state.hover.gx = gx; state.hover.gy = gy;
-        state.hover.valid = canPlace(gx, gy);
-    }
-
-    function selectTowerAt(gx, gy) {
-        const t = state.towers.find(tt => tt.gx === gx && tt.gy === gy);
-        state.selectedTowerId = t ? t.id : null;
-        return t || null;
-    }
+    function setBuild(elt) { setBuildImpl(state, elt); }
+    function setHover(gx, gy) { setHoverImpl(state, gx, gy, canPlace); }
+    function selectTowerAt(gx, gy) { return selectTowerAtImpl(state, gx, gy); }
 
     function levelUpSelected() {
-        const t = state.towers.find(tt => tt.id === state.selectedTowerId); if (!t) return false;
-        const cost = UPG_COST(t.lvl, t.elt); if (state.gold < cost) return false;
-
-        onGoldChange(-cost, 'level_up');
-        const prev = t.lvl;
-        t.lvl++;
-        t.spent += cost;
-        const mult = BASIC_TOWERS.includes(t.elt) ? UPGRADE_MULT.basic : UPGRADE_MULT.elemental;
-        t.dmg *= mult.dmg; t.firerate *= mult.firerate; t.range += mult.range;
-
-        const unlocked = UNLOCK_TIERS.filter(u => t.lvl >= u).length;
-        const credits = t.freeTierPicks || 0;
-        const owed = Math.max(0, unlocked - (t.tree.length + credits));
-        if (owed > 0) t.freeTierPicks = credits + owed;
-
-        neighborsSynergy();
-        onTowerLevel(t, prev, t.lvl, cost);
-        return true;
+        return levelUpSelectedImpl(state, { onGoldChange, neighborsSynergy: () => neighborsSynergyBound(), onTowerLevel });
     }
 
-    function applyEvolution(key) {
-        const t = state.towers.find(tt => tt.id === state.selectedTowerId);
-        if (!t) return false;
-        if ((t.freeTierPicks || 0) <= 0) return false;
-        const branch = TREES[t.elt];
-        const currentTier = t.tree.length;
-        if (!branch || currentTier >= branch.length) return false;
-        const choices = branch[currentTier].filter(n => !n.req || t.tree.includes(n.req));
-        const chosen = choices.find(n => n.key === key); if (!chosen) return false;
-        chosen.mod(t); t.tree.push(chosen.key); t.freeTierPicks--;
-        return true;
-    }
-
-    function setTargeting(mode) {
-        const t = state.towers.find(tt => tt.id === state.selectedTowerId);
-        if (!t) return false;
-        if (!['first', 'last', 'cycle'].includes(mode)) return false;
-        t.targeting = mode;
-        t._cycleIndex = 0;
-        return true;
-    }
+    function applyEvolution(key) { return applyEvolutionImpl(state, key); }
+    function setTargeting(mode) { return setTargetingImpl(state, mode); }
 
     const awardWaveGold = (amount) => onGoldChange(+amount, 'wave_end_reward');
     // waves controller
@@ -284,42 +116,24 @@ export function createEngine(seedState, userConfig) {
     }
 
     function step(dt) {
-        if (state.paused || state.gameOver) return;
-        state.dt = dt;
-
-        waves.stepSpawner(dt);
-
-        for (const c of state.creeps) {
-            advanceCreep(state, c, () => {
-                onCreepLeak(c);
-                onLifeChange(-1, 'leak');
-            });
-            if (c.hp <= 0 && c.alive) { c.alive = false; }
-        }
-
-        rebuildCreepGrid(state);
-
-        for (const t of state.towers) { if (!t.ghost) fireTower(state, { onShot, onHit, onCreepDamage }, t, dt); }
-
-        updateBullets(state, { onCreepDamage });
-        updateParticles(state);
-
-        cullDead(state, {
-            onKill: (c) => { onCreepKill(c); onGoldChange(+c.gold, 'kill'); },
+        stepImpl(state, dt, {
+            waves,
+            advanceCreep,
+            rebuildCreepGrid,
+            fireTower,
+            updateBullets,
+            updateParticles,
+            cullDead,
+            onCreepLeak,
+            onLifeChange,
+            onCreepKill,
+            onGoldChange,
+            onShot,
+            onHit,
+            startWave,
+            onCreepDamage,
         });
-
-        const canAuto = state.autoWaveEnabled && !state.gameOver && !waves.isSpawning() && state.creeps.length === 0;
-        if (canAuto) {
-            if (state._autoWaveTimer < 0) { state._autoWaveTimer = (state.autoWaveDelay || 0) / 1000; }
-            else {
-                state._autoWaveTimer -= dt;
-                if (state._autoWaveTimer <= 0) { state._autoWaveTimer = -1; startWave(); }
-            }
-        } else {
-            state._autoWaveTimer = -1;
-        }
     }
-
 
     function startWave() {
         return waves.startWave();
@@ -378,8 +192,7 @@ export function createEngine(seedState, userConfig) {
         state.creeps.push(cr);
         onCreepSpawn(cr);
     }
-    // ---- Hooks (single event API) --------------------------------------------
-    // Central registry: each hook has a Set of subscribers.
+
     // ---- Hooks (single event API) --------------------------------------------
     const hooks = {
         gameReset: new Set(),
@@ -418,7 +231,6 @@ export function createEngine(seedState, userConfig) {
         }
     }
 
-    // Make available to consumers
     engine.hook = hook;
 
     // ---- Notifiers -----------------------------------------------------------
@@ -452,12 +264,12 @@ export function createEngine(seedState, userConfig) {
     function onSpeedChange() { fire('speedChange', { speed: state.speed }); }
     function onAutoWaveChange() { fire('autoWaveChange', { enabled: state.autoWaveEnabled, delay: state.autoWaveDelay }); }
     function onLifeChange(delta, reason) {
-        state.lives += delta;
+        changeLife(state, delta);
         fire('lifeChange', { lives: state.lives, delta, reason });
         if (state.lives <= 0 && !state.gameOver) { state.gameOver = true; onGameOver(); }
     }
     function onGoldChange(delta, reason) {
-        state.gold += delta;
+        changeGold(state, delta);
         fire('goldChange', { gold: state.gold, delta, reason });
     }
     function onTowerPlace(t, cost) { fire('towerPlace', { id: t.id, elt: t.elt, cost, gx: t.gx, gy: t.gy }); }
@@ -479,7 +291,7 @@ export function createEngine(seedState, userConfig) {
         clearParticlePool();
         rebuildTowerGrid();
         recomputePathingForAll(state, isBlocked);
-        neighborsSynergy();
+        neighborsSynergyBound();
         onGameReset();
         onGoldChange(0);
         onLifeChange(0);
@@ -512,7 +324,6 @@ export function createEngine(seedState, userConfig) {
 
     // initial path
     recomputePathingForAll(state, isBlocked);
-
 
     engine.stats = attachStats(engine);
     engine.hook = hook;
