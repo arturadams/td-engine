@@ -40,4 +40,13 @@ describe('assets loader', () => {
     expect(result.bad).toBe(placeholder);
     expect(placeholder.src.startsWith('data:image/png;base64,')).toBe(true);
   });
+
+  it('returns cached image if present', async () => {
+    setupMockImage();
+    const { loadImages, getImage } = await import('./assets.js');
+    await loadImages({ hero: 'hero.png' });
+    const cached = getImage('hero');
+    const result = await loadImages({ hero: 'hero.png' });
+    expect(result.hero).toBe(cached);
+  });
 });
