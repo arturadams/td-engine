@@ -7,15 +7,15 @@
   <title>TD Engine — Vanilla Example</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%238b5cf6'/%3E%3Ccircle cx='24' cy='28' r='6' fill='%23ef4444'/%3E%3Ccircle cx='42' cy='38' r='6' fill='%2338bdf8'/%3E%3C/svg%3E" />
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23bf00ff'/%3E%3Ccircle cx='24' cy='28' r='6' fill='%23ff0066'/%3E%3Ccircle cx='42' cy='38' r='6' fill='%2300eaff'/%3E%3C/svg%3E" />
   <style>
     :root {
       --toolbar-h: 88px;
     }
 
     body {
-      background: #0b1326;
-      color: #e6edf3;
+      background: #1b0033;
+      color: #ffe6ff;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", Helvetica, Arial;
     }
 
@@ -40,8 +40,8 @@
     }
 
     canvas {
-      background: #0b1326;
-      border: 1px solid #1f2a44;
+      background: #1b0033;
+      border: 1px solid #ff00ff;
       border-radius: 12px;
       image-rendering: pixelated;
       width: 100%;
@@ -94,7 +94,7 @@
 
   <!-- Mobile bottom toolbar (single source of truth on mobile) -->
   <div
-    class="mobile-toolbar fixed md:hidden inset-x-0 bottom-0 pb-[env(safe-area-inset-bottom)] bg-[rgba(5,8,16,.9)] border-t border-slate-700/60 backdrop-blur"
+    class="mobile-toolbar fixed md:hidden inset-x-0 bottom-0 pb-[env(safe-area-inset-bottom)] bg-[rgba(16,0,32,.9)] border-t border-[rgba(255,0,255,0.6)] backdrop-blur"
     id="mToolbar" style="height:var(--toolbar-h)">
     <div class="max-w-[1200px] mx-auto h-full px-3 flex items-center justify-between gap-2">
       <div class="flex gap-2">
@@ -121,7 +121,7 @@
   <!-- Game Over Modal -->
   <div id="goModal" class="fixed inset-0 hidden items-center justify-center z-50">
     <div class="absolute inset-0 bg-black/70"></div>
-    <div class="relative bg-slate-900 border border-slate-700 rounded-2xl w-[min(92vw,560px)] p-4">
+    <div class="relative bg-[#1b0033] border border-[#ff00ff] rounded-2xl w-[min(92vw,560px)] p-4">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-lg font-semibold">Game Over</h2>
         <button id="goClose" class="px-2 py-1 text-xs border rounded">Close</button>
@@ -136,7 +136,7 @@
   <!-- Pause Overlay -->
   <div id="pauseOverlay" class="fixed inset-0 hidden items-center justify-center z-50">
     <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative bg-slate-900 border border-slate-700 rounded-2xl w-[min(92vw,480px)] p-4">
+    <div class="relative bg-[#1b0033] border border-[#ff00ff] rounded-2xl w-[min(92vw,480px)] p-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold">Paused</h2>
         <button id="poClose" class="px-2 py-1 text-xs border rounded">Resume</button>

@@ -9,13 +9,13 @@ Each element lives in `packages/core/elements.js` and includes a `color` used fo
 ```js
 // packages/core/elements.js
 export const elements = {
-  FIRE:  { color:"#ef4444", status:"BURN" },
-  ICE:   { color:"#38bdf8", status:"CHILL" },
-  LIGHT: { color:"#a78bfa", status:"SHOCK" },
-  POISON:{ color:"#22c55e", status:"POISON" },
-  EARTH: { color:"#a3a3a3", status:"BRITTLE" },
-  WIND:  { color:"#60a5fa", status:"EXPOSED" },
-  // ARCANE: { color:"#be123c", status:"MANA_BURN" }, // example addition
+  FIRE:  { color:"#ff0066", status:"BURN" },
+  ICE:   { color:"#00eaff", status:"CHILL" },
+  LIGHT: { color:"#f8ff00", status:"SHOCK" },
+  POISON:{ color:"#39ff14", status:"POISON" },
+  EARTH: { color:"#ffb347", status:"BRITTLE" },
+  WIND:  { color:"#00bbff", status:"EXPOSED" },
+  // ARCANE: { color:"#bf00ff", status:"MANA_BURN" }, // example addition
 };
 ```
 

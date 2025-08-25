@@ -18,7 +18,7 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     if (!opts.showGrid) return;
     const { cols, rows } = map.size;
     ctx.save();
-    ctx.strokeStyle = '#1f2937'; // slate-800
+      ctx.strokeStyle = 'rgba(255,0,255,0.2)'; // neon magenta grid
     ctx.lineWidth = 1;
     for (let x = 0; x <= cols; x++) {
       ctx.beginPath(); ctx.moveTo(x * TILE, 0); ctx.lineTo(x * TILE, rows * TILE); ctx.stroke();
@@ -33,8 +33,8 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     const p = state.path;
     if (!p || p.length < 2) return;
     const g = ctx.createLinearGradient(p[0].x, p[0].y, p[p.length - 1].x, p[p.length - 1].y);
-    g.addColorStop(0, '#64748b'); // slate-400
-    g.addColorStop(1, '#8b5cf6'); // violet-500
+      g.addColorStop(0, '#ff00ff'); // neon magenta
+      g.addColorStop(1, '#00ffff'); // neon cyan
     ctx.save();
     ctx.strokeStyle = g;
     ctx.lineWidth = 10;
@@ -50,11 +50,11 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
   function drawStartEnd(state) {
     const s = state.startPx, e = state.endPx;
     ctx.save();
-    // start (green)
-    ctx.fillStyle = '#10b981'; // emerald-500
+      // start (neon green)
+      ctx.fillStyle = '#39ff14';
     ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, Math.PI * 2); ctx.fill();
-    // end (gold)
-    ctx.fillStyle = '#f59e0b'; // amber-500
+      // end (neon yellow)
+      ctx.fillStyle = '#f8ff00';
     ctx.beginPath(); ctx.arc(e.x, e.y, 6, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
@@ -63,8 +63,8 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     if (!opts.showBlocked) return;
     if (!map.blocked || !map.blocked.length) return;
     ctx.save();
-    ctx.fillStyle = 'rgba(148,163,184,.28)'; // slate-400 @ ~28%
-    ctx.strokeStyle = 'rgba(148,163,184,.45)';
+      ctx.fillStyle = 'rgba(255,0,255,.28)'; // neon magenta @ ~28%
+      ctx.strokeStyle = 'rgba(255,0,255,.45)';
     for (const { x, y } of map.blocked) {
       const px = x * TILE, py = y * TILE;
       ctx.fillRect(px, py, TILE, TILE);
@@ -84,7 +84,7 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       const off = document.createElement('canvas');
       off.width = 8; off.height = 8;
       const c2 = off.getContext('2d');
-      c2.strokeStyle = 'rgba(220, 38, 38, .35)'; // red-600 @ 35%
+        c2.strokeStyle = 'rgba(0,255,255,.35)'; // neon cyan @ 35%
       c2.lineWidth = 1;
       c2.beginPath();
       c2.moveTo(0, 8); c2.lineTo(8, 0);
@@ -111,24 +111,24 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       ctx.translate(c.x, c.y);
 
       // body
-      ctx.fillStyle = '#e5e7eb'; // gray-200
+        ctx.fillStyle = '#ffe4ff'; // light neon pink
       ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
 
       // health bar
       const pct = Math.max(0, Math.min(1, c.hp / c.maxhp));
       const w = 18, h = 3;
-      ctx.fillStyle = '#0b1220'; ctx.fillRect(-w / 2, -12, w, h);
-      ctx.fillStyle = pct > 0.5 ? '#22c55e' : (pct > 0.2 ? '#f59e0b' : '#ef4444');
+        ctx.fillStyle = '#220033'; ctx.fillRect(-w / 2, -12, w, h);
+        ctx.fillStyle = pct > 0.5 ? '#39ff14' : (pct > 0.2 ? '#f8ff00' : '#ff073a');
       ctx.fillRect(-w / 2, -12, w * pct, h);
 
       // status pips (BURN/POISON/CHILL/SHOCK/stun)
       let dx = -9;
       function pip(color) { ctx.fillStyle = color; ctx.fillRect(dx, -18, 3, 3); dx += 4; }
-      if (c.status?.BURN) pip('#ef4444');
-      if (c.status?.POISON) pip('#22c55e');
-      if (c.status?.CHILL) pip('#38bdf8');
-      if (c.status?.SHOCK) pip('#a78bfa');
-      if (c.status?.stun && c.status.stun > 0) pip('#fbbf24');
+      if (c.status?.BURN) pip('#ff073a');
+      if (c.status?.POISON) pip('#39ff14');
+      if (c.status?.CHILL) pip('#00eaff');
+      if (c.status?.SHOCK) pip('#d580ff');
+      if (c.status?.stun && c.status.stun > 0) pip('#f8ff00');
 
       ctx.restore();
     }
@@ -140,8 +140,8 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       ctx.save();
       ctx.translate(t.x, t.y);
       const elt = t.elt || t.kind;
-      const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
-      const color = EltColor[elt] || extraColors[elt] || '#94a3b8';
+        const extraColors = { ARCHER: '#ffdd00', CANNON: '#ff4d00', SIEGE: '#ff4d00' };
+        const color = EltColor[elt] || extraColors[elt] || '#ff99ff';
       ctx.fillStyle = color;
       ctx.shadowColor = color; ctx.shadowBlur = 16;
       ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
@@ -156,7 +156,7 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       }
 
       // tiny ticks for level
-      ctx.fillStyle = '#0b1020';
+        ctx.fillStyle = '#1a0033';
       for (let i = 0; i < t.lvl; i++) ctx.fillRect(-10 + i * 6, 10, 4, 3);
 
       ctx.restore();
@@ -167,8 +167,8 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     for (const b of state.bullets) {
       ctx.save();
       ctx.translate(b.x, b.y);
-      const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
-      const color = b.color || EltColor[b.elt] || extraColors[b.elt] || '#94a3b8';
+        const extraColors = { ARCHER: '#ffdd00', CANNON: '#ff4d00', SIEGE: '#ff4d00' };
+        const color = b.color || EltColor[b.elt] || extraColors[b.elt] || '#ff99ff';
       ctx.fillStyle = color;
       ctx.shadowColor = color; ctx.shadowBlur = 12;
 
@@ -240,15 +240,15 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       ctx.save();
       if (p.ring) {
         ctx.globalAlpha = Math.max(0, p.a ?? 0.6);
-        ctx.strokeStyle = p.color || '#94a3b8';
+        ctx.strokeStyle = p.color || '#ff99ff';
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.stroke();
       } else if (p.circle) {
         ctx.globalAlpha = Math.max(0, p.a ?? 0.6);
-        ctx.fillStyle = p.color || '#94a3b8';
+        ctx.fillStyle = p.color || '#ff99ff';
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
       } else if (p.spark) {
         ctx.globalAlpha = Math.max(0, p.a ?? 1);
-        ctx.strokeStyle = p.color || '#94a3b8';
+        ctx.strokeStyle = p.color || '#ff99ff';
         ctx.lineWidth = 2;
         const len = p.len || 6;
         ctx.beginPath();
@@ -257,7 +257,7 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
         ctx.stroke();
       } else {
         ctx.globalAlpha = Math.max(0, p.a ?? 1);
-        ctx.fillStyle = p.color || '#94a3b8';
+        ctx.fillStyle = p.color || '#ff99ff';
         ctx.fillRect(p.x, p.y, 2, 2);
       }
       ctx.restore();
@@ -270,7 +270,7 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     const x = gx * TILE, y = gy * TILE;
     ctx.save();
     ctx.globalAlpha = 0.25;
-    ctx.fillStyle = valid ? '#22c55e' : '#ef4444';
+    ctx.fillStyle = valid ? '#39ff14' : '#ff073a';
     ctx.fillRect(x, y, TILE, TILE);
     ctx.restore();
   }

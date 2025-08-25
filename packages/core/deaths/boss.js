@@ -12,7 +12,7 @@ function die(state, c) {
             x: c.x, y: c.y,
             vx: Math.cos(ang) * sp,
             vy: Math.sin(ang) * sp,
-            ttl: 0.6, max: 0.6, a: 1, color: '#fbbf24',
+            ttl: 0.6, max: 0.6, a: 1, color: '#f8ff00',
         });
     }
 }

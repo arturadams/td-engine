@@ -32,15 +32,15 @@ export const Status = {
 // Tower definitions used to derive helpers like EltColor, EltType and
 // EltStatus.  Non-elemental towers simply omit a status effect.
 export const ELEMENTS = [
-  { key: 'ARCHER', color: '#9ca3af', type: 'bolt' },
-  { key: 'SIEGE', color: '#f59e0b', type: 'siege' },
-  { key: 'FIRE', color: '#ef4444', type: 'splash', status: Status.BURN },
-  { key: 'ICE', color: '#38bdf8', type: 'bolt', status: Status.CHILL },
-  { key: 'LIGHT', color: '#a78bfa', type: 'chain', status: Status.SHOCK },
-  { key: 'POISON', color: '#22c55e', type: 'bolt', status: Status.POISON },
-  { key: 'EARTH', color: '#a3a3a3', type: 'splash', status: Status.BRITTLE },
-  { key: 'WIND', color: '#60a5fa', type: 'bolt', status: Status.EXPOSED },
-  { key: 'ARCANE', color: '#be123c', type: 'bolt', status: Status.MANA_BURN }
+  { key: 'ARCHER', color: '#ffdd00', type: 'bolt' },
+  { key: 'SIEGE', color: '#ff4d00', type: 'siege' },
+  { key: 'FIRE', color: '#ff0066', type: 'splash', status: Status.BURN },
+  { key: 'ICE', color: '#00eaff', type: 'bolt', status: Status.CHILL },
+  { key: 'LIGHT', color: '#f8ff00', type: 'chain', status: Status.SHOCK },
+  { key: 'POISON', color: '#39ff14', type: 'bolt', status: Status.POISON },
+  { key: 'EARTH', color: '#ffb347', type: 'splash', status: Status.BRITTLE },
+  { key: 'WIND', color: '#00bbff', type: 'bolt', status: Status.EXPOSED },
+  { key: 'ARCANE', color: '#bf00ff', type: 'bolt', status: Status.MANA_BURN }
 ];
 
 export const EltColor = Object.fromEntries(ELEMENTS.map(e => [e.key, e.color]));

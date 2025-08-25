@@ -23,13 +23,13 @@ function addParticle(state, props) {
 
 function spawnImpact(state, b) {
     const rng = state.rng;
-    const color = b.color || '#94a3b8';
+      const color = b.color || '#ff99ff';
     let count = 6, speed = 40, ttl = 0.4, ring = 12;
     switch (b.elt) {
         case 'FIRE': {
             count = 12; speed = 140; ttl = 0.5; ring = 22;
             // bright flash for fiery explosion
-            addParticle(state, { x: b.x, y: b.y, r: 0, vr: 120, ttl: 0.25, max: 0.25, a: 1, color: '#f97316', circle: true });
+              addParticle(state, { x: b.x, y: b.y, r: 0, vr: 120, ttl: 0.25, max: 0.25, a: 1, color: '#ff0066', circle: true });
             break;
         }
         case 'ICE': {
@@ -37,10 +37,10 @@ function spawnImpact(state, b) {
             // icy spikes
             for (let n = 0; n < 4; n++) {
                 const ang = rng() * Math.PI * 2;
-                addParticle(state, { x: b.x, y: b.y, ang, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
-                addParticle(state, { x: b.x, y: b.y, ang: ang + Math.PI / 2, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#e0f2fe', spark: true });
+                  addParticle(state, { x: b.x, y: b.y, ang, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#ccfaff', spark: true });
+                  addParticle(state, { x: b.x, y: b.y, ang: ang + Math.PI / 2, len: 8, ttl: 0.5, max: 0.5, a: 1, color: '#ccfaff', spark: true });
             }
-            addParticle(state, { x: b.x, y: b.y, r: 0, vr: 60, ttl: 0.3, max: 0.3, a: 1, color: '#bae6fd', circle: true });
+              addParticle(state, { x: b.x, y: b.y, r: 0, vr: 60, ttl: 0.3, max: 0.3, a: 1, color: '#aafcff', circle: true });
             break;
         }
         case 'LIGHT': {
@@ -51,12 +51,12 @@ function spawnImpact(state, b) {
                 const sp = 160;
                 addParticle(state, {
                     x: b.x, y: b.y,
-                    vx: Math.cos(ang) * sp,
-                    vy: Math.sin(ang) * sp,
-                    ang, len: 12, ttl: 0.3, max: 0.3, a: 1, color: '#faf5ff', spark: true,
+                      vx: Math.cos(ang) * sp,
+                      vy: Math.sin(ang) * sp,
+                      ang, len: 12, ttl: 0.3, max: 0.3, a: 1, color: '#f8ff00', spark: true,
                 });
             }
-            addParticle(state, { x: b.x, y: b.y, r: 0, vr: 200, ttl: 0.15, max: 0.15, a: 1, color: '#faf5ff', circle: true });
+              addParticle(state, { x: b.x, y: b.y, r: 0, vr: 200, ttl: 0.15, max: 0.15, a: 1, color: '#f8ff00', circle: true });
             break;
         }
         case 'POISON':
