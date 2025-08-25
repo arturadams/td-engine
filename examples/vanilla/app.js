@@ -19,7 +19,16 @@ const renderer = createCanvasRenderer({
   engine,
   sprites: {
     creeps: { default: 'sprites/creep.svg' },
-    towers: { default: 'sprites/tower.svg' },
+    towers: {
+      default: 'sprites/tower.svg',
+      FIRE: 'sprites/fire.svg',
+      ICE: 'sprites/ice.svg',
+      LIGHT: 'sprites/light.svg',
+      POISON: 'sprites/poison.svg',
+      EARTH: 'sprites/earth.svg',
+      WIND: 'sprites/wind.svg',
+      ARCANE: 'sprites/arcane.svg',
+    },
   },
 });
 
