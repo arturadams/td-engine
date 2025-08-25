@@ -50,6 +50,7 @@ export function applyStatus(c, status, fromTower) {
     const hasShock = !!c.status[Status.SHOCK];
     const hasBrittle = !!c.status[Status.BRITTLE];
     const hasExposed = !!c.status[Status.EXPOSED];
+    const hasManaBurn = !!c.status[Status.MANA_BURN];
 
     if (hasBurn && hasPoison && !c.status.combo_acid) {
         c.status.combo_acid = 2.0;
@@ -71,6 +72,11 @@ export function applyStatus(c, status, fromTower) {
     if (hasExposed && hasBurn) {
         c.status[Status.BURN].dot *= 1.5;
         return 'combo.fanned';
+    }
+    if (hasManaBurn && hasShock) {
+        const dot = 20 + (m.lightDot || 0);
+        c.status.lightDot = { dot, t: 1.5 };
+        return 'combo.overload';
     }
     return null;
 }
