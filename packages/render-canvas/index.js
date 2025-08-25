@@ -9,72 +9,75 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     showGrid: true,
     showBlocked: true,
     showBuildMask: true,
+    // Cache static map layers (grid, path, blocked tiles, build mask)
+    // into an offscreen canvas for improved performance.
+    cacheMap: true,
     ...options,
   };
 
   // --- helpers -------------------------------------------------------------
 
-  function drawGrid(map) {
+  function drawGrid(map, c = ctx) {
     if (!opts.showGrid) return;
     const { cols, rows } = map.size;
-    ctx.save();
-    ctx.strokeStyle = '#1f2937'; // slate-800
-    ctx.lineWidth = 1;
+    c.save();
+    c.strokeStyle = '#1f2937'; // slate-800
+    c.lineWidth = 1;
     for (let x = 0; x <= cols; x++) {
-      ctx.beginPath(); ctx.moveTo(x * TILE, 0); ctx.lineTo(x * TILE, rows * TILE); ctx.stroke();
+      c.beginPath(); c.moveTo(x * TILE, 0); c.lineTo(x * TILE, rows * TILE); c.stroke();
     }
     for (let y = 0; y <= rows; y++) {
-      ctx.beginPath(); ctx.moveTo(0, y * TILE); ctx.lineTo(cols * TILE, y * TILE); ctx.stroke();
+      c.beginPath(); c.moveTo(0, y * TILE); c.lineTo(cols * TILE, y * TILE); c.stroke();
     }
-    ctx.restore();
+    c.restore();
   }
 
-  function drawPath(state) {
+  function drawPath(state, c = ctx) {
     const p = state.path;
     if (!p || p.length < 2) return;
-    const g = ctx.createLinearGradient(p[0].x, p[0].y, p[p.length - 1].x, p[p.length - 1].y);
+    const g = c.createLinearGradient(p[0].x, p[0].y, p[p.length - 1].x, p[p.length - 1].y);
     g.addColorStop(0, '#64748b'); // slate-400
     g.addColorStop(1, '#8b5cf6'); // violet-500
-    ctx.save();
-    ctx.strokeStyle = g;
-    ctx.lineWidth = 10;
-    ctx.lineJoin = 'round';
-    ctx.globalAlpha = 0.25;
-    ctx.beginPath();
-    ctx.moveTo(p[0].x, p[0].y);
-    for (let i = 1; i < p.length; i++) ctx.lineTo(p[i].x, p[i].y);
-    ctx.stroke();
-    ctx.restore();
+    c.save();
+    c.strokeStyle = g;
+    c.lineWidth = 10;
+    c.lineJoin = 'round';
+    c.globalAlpha = 0.25;
+    c.beginPath();
+    c.moveTo(p[0].x, p[0].y);
+    for (let i = 1; i < p.length; i++) c.lineTo(p[i].x, p[i].y);
+    c.stroke();
+    c.restore();
   }
 
-  function drawStartEnd(state) {
+  function drawStartEnd(state, c = ctx) {
     const s = state.startPx, e = state.endPx;
-    ctx.save();
+    c.save();
     // start (green)
-    ctx.fillStyle = '#10b981'; // emerald-500
-    ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, Math.PI * 2); ctx.fill();
+    c.fillStyle = '#10b981'; // emerald-500
+    c.beginPath(); c.arc(s.x, s.y, 6, 0, Math.PI * 2); c.fill();
     // end (gold)
-    ctx.fillStyle = '#f59e0b'; // amber-500
-    ctx.beginPath(); ctx.arc(e.x, e.y, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
+    c.fillStyle = '#f59e0b'; // amber-500
+    c.beginPath(); c.arc(e.x, e.y, 6, 0, Math.PI * 2); c.fill();
+    c.restore();
   }
 
-  function drawBlocked(map) {
+  function drawBlocked(map, c = ctx) {
     if (!opts.showBlocked) return;
     if (!map.blocked || !map.blocked.length) return;
-    ctx.save();
-    ctx.fillStyle = 'rgba(148,163,184,.28)'; // slate-400 @ ~28%
-    ctx.strokeStyle = 'rgba(148,163,184,.45)';
+    c.save();
+    c.fillStyle = 'rgba(148,163,184,.28)'; // slate-400 @ ~28%
+    c.strokeStyle = 'rgba(148,163,184,.45)';
     for (const { x, y } of map.blocked) {
       const px = x * TILE, py = y * TILE;
-      ctx.fillRect(px, py, TILE, TILE);
-      ctx.strokeRect(px, py, TILE, TILE);
+      c.fillRect(px, py, TILE, TILE);
+      c.strokeRect(px, py, TILE, TILE);
     }
-    ctx.restore();
+    c.restore();
   }
 
-  // Optional: visualize a buildable mask if provided. We’ll hatch NON-buildable.
-  function drawBuildableMask(map) {
+  // Optional: visualize a buildable mask if provided. We'll hatch NON-buildable.
+  function drawBuildableMask(map, c = ctx) {
     if (!opts.showBuildMask) return;
     const mask = map.buildableMask;
     if (!mask) return;
@@ -92,16 +95,16 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       drawBuildableMask._pat = ctx.createPattern(off, 'repeat');
     }
 
-    ctx.save();
-    ctx.fillStyle = drawBuildableMask._pat;
+    c.save();
+    c.fillStyle = drawBuildableMask._pat;
     for (let gy = 0; gy < mask.length; gy++) {
       for (let gx = 0; gx < mask[gy].length; gx++) {
         if (mask[gy][gx] === false) {
-          ctx.fillRect(gx * TILE, gy * TILE, TILE, TILE);
+          c.fillRect(gx * TILE, gy * TILE, TILE, TILE);
         }
       }
     }
-    ctx.restore();
+    c.restore();
   }
 
   // --- entity draws (assumes you already have these; stubs shown) ----------
@@ -277,18 +280,54 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
 
   // --- public render -------------------------------------------------------
 
+  // Cache static map layers into an offscreen canvas
+  function getMapCanvas(state) {
+    const { cols, rows } = state.map.size;
+    const w = cols * TILE, h = rows * TILE;
+    const key = JSON.stringify({
+      cols,
+      rows,
+      start: state.startPx,
+      end: state.endPx,
+      path: state.path,
+      blocked: state.map.blocked,
+      mask: state.map.buildableMask,
+    });
+    if (getMapCanvas._key !== key) {
+      if (!getMapCanvas._canvas) {
+        getMapCanvas._canvas = document.createElement('canvas');
+        getMapCanvas._ctx = getMapCanvas._canvas.getContext('2d');
+      }
+      const off = getMapCanvas._canvas;
+      const oc = getMapCanvas._ctx;
+      off.width = w;
+      off.height = h;
+      oc.clearRect(0, 0, w, h);
+      drawGrid(state.map, oc);
+      drawPath(state, oc);
+      drawBlocked(state.map, oc);
+      drawBuildableMask(state.map, oc);
+      drawStartEnd(state, oc);
+      getMapCanvas._key = key;
+    }
+    return getMapCanvas._canvas;
+  }
+
   function render(state, dt) {
     const { cols, rows } = state.map.size;
-    ctx.clearRect(0, 0, cols * TILE, rows * TILE);
+    const w = cols * TILE, h = rows * TILE;
+    ctx.clearRect(0, 0, w, h);
 
-    // Map base layers
-    drawGrid(state.map);
-    drawPath(state);
-    drawBlocked(state.map);     // <= blocked tiles
-    drawBuildableMask(state.map); // <= hatched non-buildable cells (if mask exists)
-    drawStartEnd(state);
+    if (opts.cacheMap) {
+      ctx.drawImage(getMapCanvas(state), 0, 0);
+    } else {
+      drawGrid(state.map);
+      drawPath(state);
+      drawBlocked(state.map);
+      drawBuildableMask(state.map);
+      drawStartEnd(state);
+    }
 
-    // Entities
     drawBullets(state);
     drawCreeps(state);
     drawTowers(state);

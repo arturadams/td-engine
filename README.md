@@ -19,3 +19,13 @@ const engine = createEngine(null, { renderer: 'webgpu' });
 
 Valid renderers are `canvas` (default) and `webgpu`. Unknown values
 fall back to `canvas`.
+
+## Canvas renderer
+
+The `createCanvasRenderer` helper accepts optional flags:
+
+- `showGrid` – draw grid lines (default `true`)
+- `showBlocked` – visualize blocked tiles (default `true`)
+- `showBuildMask` – hatch non-buildable cells (default `true`)
+- `cacheMap` – cache static map layers to an offscreen canvas for faster
+  rendering (default `true`)
