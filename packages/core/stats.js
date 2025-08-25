@@ -1,5 +1,5 @@
 // packages/core/stats.js
-export function attachStats(engine) {
+export function attachStats(engine, { waveCap = 50 } = {}) {
     const stats = fresh();
     const off = [];
 
@@ -19,6 +19,7 @@ export function attachStats(engine) {
         stats.totals.wavesCleared = Math.max(stats.totals.wavesCleared, wave);
         stats.meta.lastWaveStartAt = null;
         if (w.leaks > 0) stats.meta.leakWaves.add(wave);
+        prune();
     });
 
     on('lifeChange', ({ lives, delta }) => {
@@ -112,6 +113,7 @@ export function attachStats(engine) {
                     accuracy: acc(stats.totals.hits, stats.totals.shots),
                 },
                 perWave: stats.waves,
+                pruned: stats.meta.pruned,
                 perType: {
                     kills: stats.killsByType,
                     leaks: stats.leaksByType,
@@ -127,7 +129,18 @@ export function attachStats(engine) {
                 }
             };
         },
-        dispose() { off.forEach(fn => fn()); off.length = 0; },
+        dispose() {
+            off.forEach(fn => fn());
+            off.length = 0;
+            stats.waves = Object.create(null);
+            stats.towers = Object.create(null);
+            stats.killsByType = Object.create(null);
+            stats.leaksByType = Object.create(null);
+            stats.creepsByType = Object.create(null);
+            stats.damageByCreep = Object.create(null);
+            stats.meta.leakWaves.clear();
+            stats.meta.pruned = { count: 0, kills: 0, leaks: 0, rewardGold: 0, durationMs: 0, combos: 0, creepsSpawned: 0 };
+        },
     };
 
     // ---- helpers
@@ -144,10 +157,37 @@ export function attachStats(engine) {
             leaksByType: Object.create(null),
             creepsByType: Object.create(null),
             damageByCreep: Object.create(null),
-            meta: { currentWave: 0, lastWaveStartAt: null, lastGold: 0, lastLives: 0, leakWaves: new Set() },
+            meta: {
+                currentWave: 0,
+                lastWaveStartAt: null,
+                lastGold: 0,
+                lastLives: 0,
+                leakWaves: new Set(),
+                pruned: { count: 0, kills: 0, leaks: 0, rewardGold: 0, durationMs: 0, combos: 0, creepsSpawned: 0 }
+            },
         };
     }
     function freshWave(wave) { return { wave, kills: 0, leaks: 0, rewardGold: 0, durationMs: 0, combos: 0, creepsSpawned: 0 }; }
+    function waveSlot() { return stats.waves[stats.meta.currentWave] ||= freshWave(stats.meta.currentWave); }
+    function prune() {
+        const keys = Object.keys(stats.waves);
+        if (keys.length <= waveCap) return;
+        keys.sort((a, b) => a - b);
+        while (keys.length > waveCap) {
+            const k = keys.shift();
+            const old = stats.waves[k];
+            delete stats.waves[k];
+            stats.meta.leakWaves.delete(+k);
+            const p = stats.meta.pruned;
+            p.count += 1;
+            p.kills += old.kills;
+            p.leaks += old.leaks;
+            p.rewardGold += old.rewardGold;
+            p.durationMs += old.durationMs;
+            p.combos += old.combos;
+            p.creepsSpawned += old.creepsSpawned;
+        }
+    }
     function ensureTower(id, elt) {
         const t = (stats.towers[id] ||= { id, elt: elt || null, placedAt: 0, soldAt: 0, levelUps: 0, finalLevel: 1, evolutions: [], shots: 0, hits: 0, damage: 0, damageByElt: {}, refund: 0, cost: 0 });
         if (elt && !t.elt) t.elt = elt;
