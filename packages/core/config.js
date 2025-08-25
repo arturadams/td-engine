@@ -4,7 +4,7 @@
 export const RENDER_BACKENDS = ['canvas', 'webgpu'];
 
 export const defaultConfig = {
-  renderer: 'canvas',
+  renderer: 'webgpu',
 };
 
 export function resolveConfig(user = {}) {
