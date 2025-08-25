@@ -19,25 +19,41 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
   const creepSprites = {};
   const towerSprites = {};
 
-  function loadImage(src) {
-    const img = new Image();
-    img.src = src;
-    return img;
+  function loadSprite(spec) {
+    if (typeof spec === 'string') {
+      const img = new Image();
+      img.src = spec;
+      return { img, frames: 1, frameW: null, frameH: null, fps: 0 };
+    }
+    if (spec && typeof spec === 'object') {
+      const img = new Image();
+      img.src = spec.src;
+      return {
+        img,
+        frames: spec.frames || 1,
+        frameW: spec.frameW || null,
+        frameH: spec.frameH || null,
+        fps: spec.fps || 8,
+      };
+    }
+    return null;
   }
 
   if (sprites.creeps) {
-    for (const [key, src] of Object.entries(sprites.creeps)) {
-      creepSprites[key] = loadImage(src);
+    for (const [key, spec] of Object.entries(sprites.creeps)) {
+      creepSprites[key] = loadSprite(spec);
     }
   }
   if (sprites.towers) {
-    for (const [key, src] of Object.entries(sprites.towers)) {
-      towerSprites[key] = loadImage(src);
+    for (const [key, spec] of Object.entries(sprites.towers)) {
+      towerSprites[key] = loadSprite(spec);
     }
   }
 
   const getCreepSprite = type => creepSprites[type] || creepSprites.default;
   const getTowerSprite = elt => towerSprites[elt] || towerSprites.default;
+
+  let animTime = 0;
 
   // --- helpers -------------------------------------------------------------
 
@@ -136,9 +152,15 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
     for (const c of state.creeps) {
       ctx.save();
       ctx.translate(c.x, c.y);
-      const img = getCreepSprite(c.type);
+      const spr = getCreepSprite(c.type);
+      const img = spr?.img;
       if (img && img.complete) {
-        ctx.drawImage(img, -8, -8, 16, 16);
+        const frames = spr.frames || 1;
+        const fw = spr.frameW || (img.width / frames);
+        const fh = spr.frameH || img.height;
+        const fps = spr.fps || 8;
+        const frame = frames > 1 ? Math.floor(animTime * fps) % frames : 0;
+        ctx.drawImage(img, frame * fw, 0, fw, fh, -fw / 2, -fh / 2, fw, fh);
       } else {
         // body fallback
         ctx.fillStyle = '#e5e7eb'; // gray-200
@@ -173,7 +195,8 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
       const elt = t.elt || t.kind;
       const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
       const color = EltColor[elt] || extraColors[elt] || '#94a3b8';
-      const img = getTowerSprite(elt);
+      const spr = getTowerSprite(elt);
+      const img = spr?.img;
       if (img && img.complete) {
         ctx.drawImage(img, -12, -12, 24, 24);
       } else {
@@ -361,6 +384,7 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
       drawStartEnd(state);
     }
 
+    animTime += dt;
     drawBullets(state);
     drawCreeps(state);
     drawTowers(state);

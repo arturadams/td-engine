@@ -18,7 +18,9 @@ const renderer = createCanvasRenderer({
   ctx,
   engine,
   sprites: {
-    creeps: { default: 'sprites/creep.svg' },
+    creeps: {
+      default: { src: 'sprites/creep-walk.svg', frames: 2, frameW: 16, frameH: 16, fps: 6 }
+    },
     towers: {
       default: 'sprites/tower.svg',
       FIRE: 'sprites/fire.svg',
