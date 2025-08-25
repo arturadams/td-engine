@@ -13,7 +13,37 @@ export async function createWebGPURenderer({ canvas, engine, options = {} }) {
   const format = navigator.gpu.getPreferredCanvasFormat();
   context.configure({ device, format });
 
+  // Minimal texture cache for future sprite rendering.
+  const textureCache = new WeakMap();
+  function ensureTexture(img) {
+    if (!img || !img.complete) return null;
+    let tex = textureCache.get(img);
+    if (!tex) {
+      // Create a texture that could be sampled in a shader later.
+      // Actual image upload is omitted for now.
+      const usage = (globalThis.GPUTextureUsage?.TEXTURE_BINDING ?? 0) |
+                    (globalThis.GPUTextureUsage?.COPY_DST ?? 0);
+      tex = device.createTexture({
+        size: [img.width || 1, img.height || 1, 1],
+        format: 'rgba8unorm',
+        usage,
+      });
+      textureCache.set(img, tex);
+      // TODO: copy image pixels to GPU texture when WebGPU image upload is implemented.
+    }
+    return tex;
+  }
+
   function render(state, dt) {
+    // Preload textures for any entities with images (future sprite support).
+    if (state.creeps) {
+      for (const c of state.creeps) if (c.img) ensureTexture(c.img);
+    }
+    if (state.towers) {
+      for (const t of state.towers) if (t.img) ensureTexture(t.img);
+    }
+
+    // Currently we only clear the screen each frame.
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginRenderPass({
       colorAttachments: [{

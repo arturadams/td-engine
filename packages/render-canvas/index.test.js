@@ -94,6 +94,36 @@ describe('render-canvas', () => {
     renderer.render(baseState());
     assert.strictEqual(calls.fillRect, 0, 'build mask suppressed when showBuildMask=false');
   });
+
+  it('draws creep sprite when img provided', () => {
+    const ctx = makeCtx();
+    let args;
+    ctx.drawImage = (...a) => { args = a; };
+    const img = { complete: true, width: 16, height: 16 };
+    const state = baseState();
+    state.creeps.push({ x: 16, y: 16, hp: 1, maxhp: 1, img, w: 20, h: 12 });
+    const renderer = createCanvasRenderer({ ctx, engine: {}, options: { cacheMap: false, showBlocked: false } });
+    renderer.render(state);
+    assert.ok(args, 'drawImage called');
+    assert.strictEqual(args[1], -10, 'uses entity width');
+    assert.strictEqual(args[2], -6, 'uses entity height');
+    assert.strictEqual(args[3], 20, 'draws with provided width');
+    assert.strictEqual(args[4], 12, 'draws with provided height');
+  });
+
+  it('falls back to tower shape when no img', () => {
+    const ctx = makeCtx();
+    let drew = false;
+    let drewImg = false;
+    ctx.arc = () => { drew = true; };
+    ctx.drawImage = () => { drewImg = true; };
+    const state = baseState();
+    state.towers.push({ id: 1, x: 16, y: 16, lvl: 1, range: 10, elt: 'FIRE' });
+    const renderer = createCanvasRenderer({ ctx, engine: {}, options: { cacheMap: false } });
+    renderer.render(state);
+    assert.ok(drew, 'arc called for fallback tower shape');
+    assert.strictEqual(drewImg, false, 'drawImage not called');
+  });
 });
 
 console.log('render-canvas tests passed');
