@@ -2,9 +2,9 @@
 // Renders map overlays (grid, blocked tiles, optional buildable mask),
 // plus calls to your existing entity renderers.
 
-import { TILE, EltColor } from '../core/content.js';
+import { TILE, EltColor, ResistProfiles } from '../core/content.js';
 
-export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }) {
+export function createCanvasRenderer({ ctx, engine, options = {}, spritePath = 'sprites' }) {
   const opts = {
     showGrid: true,
     showBlocked: true,
@@ -15,7 +15,11 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
     ...options,
   };
 
-  // sprite loading
+  // sprite loading follows a naming convention based on creep type or tower
+  // element.  When `spritePath` is provided, the renderer will eagerly load an
+  // image named `${spritePath}/${id}.svg` for each known creep/tower id (using
+  // lowercase file names).  Unknown ids fall back to `creep.svg`/`tower.svg` in
+  // that same directory.
   const creepSprites = {};
   const towerSprites = {};
 
@@ -25,15 +29,15 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
     return img;
   }
 
-  if (sprites.creeps) {
-    for (const [key, src] of Object.entries(sprites.creeps)) {
-      creepSprites[key] = loadImage(src);
+  if (spritePath) {
+    for (const type of Object.keys(ResistProfiles)) {
+      creepSprites[type] = loadImage(`${spritePath}/${type.toLowerCase()}.svg`);
     }
-  }
-  if (sprites.towers) {
-    for (const [key, src] of Object.entries(sprites.towers)) {
-      towerSprites[key] = loadImage(src);
+    creepSprites.default = loadImage(`${spritePath}/creep.svg`);
+    for (const elt of Object.keys(EltColor)) {
+      towerSprites[elt] = loadImage(`${spritePath}/${elt.toLowerCase()}.svg`);
     }
+    towerSprites.default = loadImage(`${spritePath}/tower.svg`);
   }
 
   const getCreepSprite = type => creepSprites[type] || creepSprites.default;
@@ -141,9 +145,11 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
     for (const c of state.creeps) {
       ctx.save();
       ctx.translate(c.x, c.y);
-      const img = getCreepSprite(c.type);
+      const w = c.w || c.width || TILE;
+      const h = c.h || c.height || TILE;
+      const img = c.img || getCreepSprite(c.type);
       if (img && img.complete) {
-        ctx.drawImage(img, -8, -8, 16, 16);
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
       } else {
         // body fallback
         ctx.fillStyle = '#e5e7eb'; // gray-200
@@ -152,10 +158,10 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
 
       // health bar
       const pct = Math.max(0, Math.min(1, c.hp / c.maxhp));
-      const w = 18, h = 3;
-      ctx.fillStyle = '#0b1220'; ctx.fillRect(-w / 2, -12, w, h);
+      const barW = 18, barH = 3;
+      ctx.fillStyle = '#0b1220'; ctx.fillRect(-barW / 2, -12, barW, barH);
       ctx.fillStyle = pct > 0.5 ? '#22c55e' : (pct > 0.2 ? '#f59e0b' : '#ef4444');
-      ctx.fillRect(-w / 2, -12, w * pct, h);
+      ctx.fillRect(-barW / 2, -12, barW * pct, barH);
 
       // status pips (BURN/POISON/CHILL/SHOCK/stun)
       let dx = -9;
@@ -178,9 +184,11 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
       const elt = t.elt || t.kind;
       const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
       const color = EltColor[elt] || extraColors[elt] || '#94a3b8';
-      const img = getTowerSprite(elt);
+      const w = t.w || t.width || TILE;
+      const h = t.h || t.height || TILE;
+      const img = t.img || getTowerSprite(elt);
       if (img && img.complete) {
-        ctx.drawImage(img, -12, -12, 24, 24);
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
       } else {
         ctx.fillStyle = color;
         ctx.shadowColor = color; ctx.shadowBlur = 16;

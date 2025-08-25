@@ -14,14 +14,12 @@ const { fit } = attachViewportFit(canvas, {
   headerSelector: 'header' // update to your actual header class/selector if you have one
 });
 const ctx = canvas.getContext('2d', { alpha: false });
-const renderer = createCanvasRenderer({
-  ctx,
-  engine,
-  sprites: {
-    creeps: { default: 'sprites/creep.svg' },
-    towers: { default: 'sprites/tower.svg' },
-  },
-});
+// The canvas renderer automatically loads sprites from the `sprites/` folder
+// using a naming convention based on creep type or tower element. For example,
+// a "Runner" creep will load `sprites/runner.svg` and an `ICE` tower will load
+// `sprites/ice.svg`. Missing files fall back to `sprites/creep.svg` or
+// `sprites/tower.svg`.
+const renderer = createCanvasRenderer({ ctx, engine });
 
 
 // ---------- Input helpers ----------
