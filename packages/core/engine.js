@@ -129,6 +129,16 @@ export function createEngine(seedState) {
         if (!canBuildCell(gx, gy)) return { ok: false, reason: 'not_buildable' };
         if (!canPlace(gx, gy)) return { ok: false, reason: 'blocks_path' };
 
+        // Prevent placement on tiles currently occupied by a creep.
+        for (const c of state.creeps) {
+            if (!c.alive) continue;
+            const cgx = Math.floor(c.x / TILE);
+            const cgy = Math.floor(c.y / TILE);
+            if (cgx === gx && cgy === gy) {
+                return { ok: false, reason: 'occupied_by_creep' };
+            }
+        }
+
         const cost = COST[elt];
         const bp = BLUEPRINT[elt];
         if (cost == null || !bp) return { ok: false, reason: 'invalid_tower' };
