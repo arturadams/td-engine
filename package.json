@@ -1,22 +1,39 @@
 {
-    "name": "@your-scope/td-core",
-    "type": "module",
-    "exports": {
-        ".": {
-            "types": "./index.d.ts",
-            "default": "./index.js"
-        },
-        "./engine.js": {
-            "types": "./engine.d.ts",
-            "default": "./engine.js"
-        },
-        "./content.js": {
-            "types": "./content.d.ts",
-            "default": "./content.js"
-        },
-        "./selectors.js": {
-            "types": "./selectors.d.ts",
-            "default": "./selectors.js"
-        }
+  "name": "@your-scope/td-core",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "vitest run --coverage"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./engine.js": {
+      "types": "./engine.d.ts",
+      "default": "./engine.js"
+    },
+    "./content.js": {
+      "types": "./content.d.ts",
+      "default": "./content.js"
+    },
+    "./selectors.js": {
+      "types": "./selectors.d.ts",
+      "default": "./selectors.js"
     }
+  },
+  "coverage": {
+    "lines": 80,
+    "functions": 80,
+    "branches": 80,
+    "statements": 80
+  },
+  "devDependencies": {
+    "@vitest/coverage-c8": "latest",
+    "happy-dom": "^14.5.1",
+    "vitest": "0.33"
+  }
 }
