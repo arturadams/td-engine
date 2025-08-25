@@ -71,6 +71,8 @@ export const REFUND_RATE = { basic: 0.8, elemental: 0.75 };
 export const COST = {
   ARCHER: 50,
   SIEGE: 65,
+  // Legacy alias for backwards compatibility
+  CANNON: 65,
   FIRE: 90,
   ICE: 90,
   LIGHT: 110,
