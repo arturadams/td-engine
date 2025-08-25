@@ -31,6 +31,7 @@ export const Status = {
 
 // Tower definitions used to derive helpers like EltColor, EltType and
 // EltStatus.  Non-elemental towers simply omit a status effect.
+const towerSprite = key => `towers/${key.toLowerCase()}.svg`;
 export const ELEMENTS = [
   { key: 'ARCHER', color: '#9ca3af', type: 'bolt' },
   { key: 'SIEGE', color: '#f59e0b', type: 'siege' },
@@ -41,11 +42,12 @@ export const ELEMENTS = [
   { key: 'EARTH', color: '#a3a3a3', type: 'splash', status: Status.BRITTLE },
   { key: 'WIND', color: '#60a5fa', type: 'bolt', status: Status.EXPOSED },
   { key: 'ARCANE', color: '#be123c', type: 'bolt', status: Status.MANA_BURN }
-];
+].map(e => ({ ...e, sprite: towerSprite(e.key) }));
 
 export const EltColor = Object.fromEntries(ELEMENTS.map(e => [e.key, e.color]));
 export const EltType = Object.fromEntries(ELEMENTS.map(e => [e.key, e.type]));
 export const EltStatus = Object.fromEntries(ELEMENTS.map(e => [e.key, e.status]));
+export const EltSprite = Object.fromEntries(ELEMENTS.map(e => [e.key, e.sprite]));
 
 // Non-elemental/basic towers that don't inflict statuses
 // Include legacy 'CANNON' for backwards compatibility, but the
@@ -133,6 +135,10 @@ export const ResistProfiles = {
   }
 };
 
+for (const [type, profile] of Object.entries(ResistProfiles)) {
+  profile.sprite = `creeps/${type.toLowerCase()}.svg`;
+}
+
 export const BLUEPRINT = {
   ARCHER: { range: 110, firerate: 1.1, dmg: 9, type: 'bolt', status: null },
   // Siege towers are the renamed cannon towers. They fire heavy shells
@@ -216,7 +222,7 @@ export const TREES = {
 
 export const defaultContent = {
   TILE, GRID_W, GRID_H, START, END,
-  Elt, Status, ELEMENTS, EltColor, EltType, EltStatus,
+  Elt, Status, ELEMENTS, EltColor, EltType, EltStatus, EltSprite,
   BASIC_TOWERS,
   COST, UPG_COST, UNLOCK_TIERS, ResistProfiles, BLUEPRINT, TREES,
   UPGRADE_MULT, REFUND_RATE,

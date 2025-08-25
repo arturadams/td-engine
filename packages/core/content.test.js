@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { UPG_COST, COST, BLUEPRINT, ELEMENTS } from './content.js';
+import { UPG_COST, COST, BLUEPRINT, ELEMENTS, ResistProfiles } from './content.js';
 
 describe('content', () => {
   it('defines cost and blueprint for each element', () => {
@@ -36,5 +36,22 @@ describe('content', () => {
     expect(keys).toContain('SIEGE');
     expect(keys).not.toContain('CANNON');
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('defines a sprite path for each element', () => {
+    for (const { key, sprite } of ELEMENTS) {
+      expect(typeof sprite).toBe('string');
+      expect(sprite.startsWith('towers/')).toBe(true);
+      expect(sprite.endsWith('.svg')).toBe(true);
+    }
+  });
+
+  it('defines a sprite path for each creep profile', () => {
+    const types = ['Grunt', 'Runner', 'Tank', 'Shield', 'Boss'];
+    for (const type of types) {
+      const sprite = ResistProfiles[type].sprite;
+      expect(sprite.startsWith('creeps/')).toBe(true);
+      expect(sprite.endsWith('.svg')).toBe(true);
+    }
   });
 });
