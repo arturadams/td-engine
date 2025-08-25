@@ -6,7 +6,7 @@ import { defaultWaveConfig, createWaveController } from './waves.js';
 import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
 import { updateBullets } from './bullets.js';
-import { updateParticles } from './particles.js';
+import { updateParticles, clearParticlePool } from './particles.js';
 import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
@@ -464,6 +464,7 @@ export function createEngine(seedState) {
     function reset(seed) {
         waves.resetSpawner();
         resetState(state, { autoWaveEnabled: state.autoWaveEnabled, autoWaveDelay: state.autoWaveDelay, seed: state.seed, ...seed });
+        clearParticlePool();
         rebuildTowerGrid();
         recomputePathingForAll(state, isBlocked);
         neighborsSynergy();
