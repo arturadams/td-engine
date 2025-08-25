@@ -2,6 +2,7 @@
 // Simple particle updater for bullet impact effects
 
 const pool = [];
+const MAX_POOL = 10000;
 
 export function acquireParticle() {
     return pool.pop() || {};
@@ -9,7 +10,11 @@ export function acquireParticle() {
 
 export function releaseParticle(p) {
     for (const k in p) delete p[k];
-    pool.push(p);
+    if (pool.length < MAX_POOL) pool.push(p);
+}
+
+export function clearParticlePool() {
+    pool.length = 0;
 }
 
 export function updateParticles(state) {
