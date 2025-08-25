@@ -1,22 +1,25 @@
 {
-    "name": "@your-scope/td-core",
-    "type": "module",
-    "exports": {
-        ".": {
-            "types": "./index.d.ts",
-            "default": "./index.js"
-        },
-        "./engine.js": {
-            "types": "./engine.d.ts",
-            "default": "./engine.js"
-        },
-        "./content.js": {
-            "types": "./content.d.ts",
-            "default": "./content.js"
-        },
-        "./selectors.js": {
-            "types": "./selectors.d.ts",
-            "default": "./selectors.js"
-        }
+  "name": "@your-scope/td-core",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./engine.js": {
+      "types": "./engine.d.ts",
+      "default": "./engine.js"
+    },
+    "./content.js": {
+      "types": "./content.d.ts",
+      "default": "./content.js"
+    },
+    "./selectors.js": {
+      "types": "./selectors.d.ts",
+      "default": "./selectors.js"
     }
+  },
+  "devDependencies": {
+    "happy-dom": "^10.0.0"
+  }
 }
