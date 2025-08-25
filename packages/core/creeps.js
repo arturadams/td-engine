@@ -8,10 +8,20 @@ import { getDeathFx } from './deaths/index.js';
 export function recomputePathingForAll(state, isBlocked) {
   const { start, end, size } = state.map;
   const { dist, prev } = buildPredecessorGrid(end, isBlocked, size.cols, size.rows);
+  const mainPathCells = reconstructPath(start, dist, prev, size);
+  const newPath = mainPathCells ? mainPathCells.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
+
+  // always update pathGrid
   state.pathGrid = { dist, prev };
 
-  const mainPathCells = reconstructPath(start, dist, prev, size);
-  state.path = mainPathCells ? mainPathCells.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
+  const oldPath = state.path || [];
+  const same =
+    oldPath.length === newPath.length &&
+    oldPath.every((p, i) => p.x === newPath[i].x && p.y === newPath[i].y);
+
+  if (same) return;
+
+  state.path = newPath;
 
   for (const c of state.creeps) {
     const startCell = toCell(state, c.x, c.y);
