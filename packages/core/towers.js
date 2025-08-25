@@ -3,6 +3,7 @@ import { EltColor, Status } from './content.js';
 import { takeDamage, applyStatus } from './combat.js';
 import { getEffect } from './effects/index.js';
 import { queryCreeps } from './spatial.js';
+import { acquireBullet } from './bullets.js';
 
 export function targetInRange(state, t) {
     const mode = t.targeting || 'first';
@@ -104,7 +105,8 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
     let speed = 480;
     if (t.elt === 'ICE') speed = 360;
     // create a visual bullet
-    state.bullets.push({
+    const b = acquireBullet();
+    Object.assign(b, {
         kind: 'bolt',
         x: t.x, y: t.y,
         vx: (dx / dist) * speed,
@@ -115,6 +117,7 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
         fromId: t.id,
         elt: t.elt,
     });
+    state.bullets.push(b);
 
     const hit = state.rng() < acc; if (hit) { state.hits++; onHit?.(t.id); }
     if (hit) {
@@ -169,7 +172,8 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
         const dx = next.x - last.x, dy = next.y - last.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const speed = 480;
-        state.bullets.push({
+        const b = acquireBullet();
+        Object.assign(b, {
             kind: 'bolt',
             x: last.x, y: last.y,
             vx: (dx / dist) * speed,
@@ -179,6 +183,7 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
             effect: getEffect(t.elt),
             elt: t.elt,
         });
+        state.bullets.push(b);
 
         takeDamage(next, dmg * 0.6, t.elt, next.status.resShred || 0);
         applyStatus(next, t.status, t);
@@ -194,7 +199,8 @@ function splashStrategy(state, { onShot }, t, target, dmg) {
     const dx = target.x - t.x, dy = target.y - t.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     const speed = 260;
-    state.bullets.push({
+    const b = acquireBullet();
+    Object.assign(b, {
         kind: 'splash',
         x: t.x, y: t.y,
         vx: (dx / dist) * speed,
@@ -209,6 +215,7 @@ function splashStrategy(state, { onShot }, t, target, dmg) {
         status: t.status,
         dmg,
     });
+    state.bullets.push(b);
     state.shots++;
     onShot?.(t.id);
     t.cooldown = 1 / t.firerate;
@@ -220,7 +227,8 @@ function siegeStrategy(state, { onShot }, t, target, dmg) {
     const dx = target.x - t.x, dy = target.y - t.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     const speed = 180; // slower projectile
-    state.bullets.push({
+    const b = acquireBullet();
+    Object.assign(b, {
         kind: 'splash',
         x: t.x, y: t.y,
         vx: (dx / dist) * speed,
@@ -235,6 +243,7 @@ function siegeStrategy(state, { onShot }, t, target, dmg) {
         status: t.status,
         dmg,
     });
+    state.bullets.push(b);
     state.shots++;
     onShot?.(t.id);
     t.cooldown = 1 / t.firerate;

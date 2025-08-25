@@ -4,6 +4,17 @@ import { acquireParticle } from './particles.js';
 import { getEffect } from './effects/index.js';
 import { queryCreeps } from './spatial.js';
 
+const pool = [];
+
+export function acquireBullet() {
+    return pool.pop() || {};
+}
+
+export function releaseBullet(b) {
+    for (const k in b) delete b[k];
+    pool.push(b);
+}
+
 function addParticle(state, props) {
     const p = acquireParticle();
     Object.assign(p, props);
@@ -93,6 +104,7 @@ export function updateBullets(state, { onCreepDamage }) {
             effect.impact(state, b);
             const last = state.bullets.pop();
             if (i < state.bullets.length) state.bullets[i] = last;
+            releaseBullet(b);
         }
     }
 }
