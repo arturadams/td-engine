@@ -9,6 +9,7 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     showGrid: true,
     showBlocked: true,
     showBuildMask: true,
+    theme: 'default',
     ...options,
   };
 
@@ -104,6 +105,25 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     ctx.restore();
   }
 
+  // Simple halftone overlay for manga-style theme
+  function drawMangaOverlay(state) {
+    if (opts.theme !== 'manga') return;
+    const { cols, rows } = state.map.size;
+    if (!drawMangaOverlay._pat) {
+      const off = document.createElement('canvas');
+      off.width = 6; off.height = 6;
+      const c2 = off.getContext('2d');
+      c2.fillStyle = 'rgba(0,0,0,0.2)';
+      c2.beginPath(); c2.arc(1, 1, 1, 0, Math.PI * 2); c2.fill();
+      drawMangaOverlay._pat = ctx.createPattern(off, 'repeat');
+    }
+    ctx.save();
+    ctx.fillStyle = drawMangaOverlay._pat;
+    ctx.globalAlpha = 0.25;
+    ctx.fillRect(0, 0, cols * TILE, rows * TILE);
+    ctx.restore();
+  }
+
   // --- entity draws (assumes you already have these; stubs shown) ----------
   function drawCreeps(state) {
     for (const c of state.creeps) {
@@ -113,6 +133,11 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
       // body
       ctx.fillStyle = '#e5e7eb'; // gray-200
       ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+      if (opts.theme === 'manga') {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#0b1220';
+        ctx.stroke();
+      }
 
       // health bar
       const pct = Math.max(0, Math.min(1, c.hp / c.maxhp));
@@ -167,6 +192,20 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     for (const b of state.bullets) {
       ctx.save();
       ctx.translate(b.x, b.y);
+      if (opts.theme === 'manga') {
+        const ang = Math.atan2(b.vy, b.vx);
+        const speed = Math.hypot(b.vx, b.vy);
+        const len = Math.min(12, speed * 2);
+        ctx.save();
+        ctx.rotate(ang);
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-len, 0);
+        ctx.lineTo(0, 0);
+        ctx.stroke();
+        ctx.restore();
+      }
       const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
       const color = b.color || EltColor[b.elt] || extraColors[b.elt] || '#94a3b8';
       ctx.fillStyle = color;
@@ -286,6 +325,7 @@ export function createCanvasRenderer({ ctx, engine, options = {} }) {
     drawPath(state);
     drawBlocked(state.map);     // <= blocked tiles
     drawBuildableMask(state.map); // <= hatched non-buildable cells (if mask exists)
+    drawMangaOverlay(state);     // <= halftone background for manga theme
     drawStartEnd(state);
 
     // Entities
