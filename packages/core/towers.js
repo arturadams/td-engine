@@ -28,7 +28,8 @@ export function targetInRange(state, t) {
         let next = null; let nextProg = Infinity; let nextId = Infinity;
         let first = null; let firstProg = Infinity; let firstId = Infinity;
         for (const c of inRange) {
-            const prog = c.seg + c.t;
+            // progress along the path; fall back to position if path not set
+            const prog = c.seg + c.t + (!c.path ? c.x / 1e6 : 0);
             const id = c.id;
             if (prog > lastProg || (prog === lastProg && id > lastId)) {
                 if (prog < nextProg || (prog === nextProg && id < nextId)) {
@@ -52,7 +53,7 @@ export function targetInRange(state, t) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
             if (dx * dx + dy * dy <= r2) {
-                const prog = c.seg + c.t;
+                const prog = c.seg + c.t + (!c.path ? c.x / 1e6 : 0);
                 if (prog < bestProg) { best = c; bestProg = prog; }
             }
         }
@@ -62,7 +63,7 @@ export function targetInRange(state, t) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
             if (dx * dx + dy * dy <= r2) {
-                const prog = c.seg + c.t;
+                const prog = c.seg + c.t + (!c.path ? c.x / 1e6 : 0);
                 if (prog > bestProg) { best = c; bestProg = prog; }
             }
         }
