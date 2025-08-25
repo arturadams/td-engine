@@ -47,23 +47,29 @@ export function targetInRange(state, t) {
 
     let best = null;
     if (mode === 'last') {
-        let bestProg = Infinity;
+        let bestProg = Infinity; let bestDist = Infinity;
         for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
-            if (dx * dx + dy * dy <= r2) {
+            const dist = dx * dx + dy * dy;
+            if (dist <= r2) {
                 const prog = c.seg + c.t;
-                if (prog < bestProg) { best = c; bestProg = prog; }
+                if (prog < bestProg || (prog === bestProg && dist < bestDist)) {
+                    best = c; bestProg = prog; bestDist = dist;
+                }
             }
         }
     } else {
-        let bestProg = -1;
+        let bestProg = -1; let bestDist = -1;
         for (const c of candidates) {
             if (!c.alive) continue;
             const dx = c.x - t.x, dy = c.y - t.y;
-            if (dx * dx + dy * dy <= r2) {
+            const dist = dx * dx + dy * dy;
+            if (dist <= r2) {
                 const prog = c.seg + c.t;
-                if (prog > bestProg) { best = c; bestProg = prog; }
+                if (prog > bestProg || (prog === bestProg && dist > bestDist)) {
+                    best = c; bestProg = prog; bestDist = dist;
+                }
             }
         }
     }
