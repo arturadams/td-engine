@@ -14,7 +14,14 @@ const { fit } = attachViewportFit(canvas, {
   headerSelector: 'header' // update to your actual header class/selector if you have one
 });
 const ctx = canvas.getContext('2d', { alpha: false });
-const renderer = createCanvasRenderer({ ctx, engine });
+const renderer = createCanvasRenderer({
+  ctx,
+  engine,
+  sprites: {
+    creeps: { default: 'sprites/creep.svg' },
+    towers: { default: 'sprites/tower.svg' },
+  },
+});
 
 
 // ---------- Input helpers ----------
