@@ -141,9 +141,11 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
     for (const c of state.creeps) {
       ctx.save();
       ctx.translate(c.x, c.y);
-      const img = getCreepSprite(c.type);
+      const w = c.w || c.width || TILE;
+      const h = c.h || c.height || TILE;
+      const img = c.img || getCreepSprite(c.type);
       if (img && img.complete) {
-        ctx.drawImage(img, -8, -8, 16, 16);
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
       } else {
         // body fallback
         ctx.fillStyle = '#e5e7eb'; // gray-200
@@ -152,10 +154,10 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
 
       // health bar
       const pct = Math.max(0, Math.min(1, c.hp / c.maxhp));
-      const w = 18, h = 3;
-      ctx.fillStyle = '#0b1220'; ctx.fillRect(-w / 2, -12, w, h);
+      const barW = 18, barH = 3;
+      ctx.fillStyle = '#0b1220'; ctx.fillRect(-barW / 2, -12, barW, barH);
       ctx.fillStyle = pct > 0.5 ? '#22c55e' : (pct > 0.2 ? '#f59e0b' : '#ef4444');
-      ctx.fillRect(-w / 2, -12, w * pct, h);
+      ctx.fillRect(-barW / 2, -12, barW * pct, barH);
 
       // status pips (BURN/POISON/CHILL/SHOCK/stun)
       let dx = -9;
@@ -178,9 +180,11 @@ export function createCanvasRenderer({ ctx, engine, options = {}, sprites = {} }
       const elt = t.elt || t.kind;
       const extraColors = { ARCHER: '#fbbf24', CANNON: '#9ca3af', SIEGE: '#9ca3af' };
       const color = EltColor[elt] || extraColors[elt] || '#94a3b8';
-      const img = getTowerSprite(elt);
+      const w = t.w || t.width || TILE;
+      const h = t.h || t.height || TILE;
+      const img = t.img || getTowerSprite(elt);
       if (img && img.complete) {
-        ctx.drawImage(img, -12, -12, 24, 24);
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
       } else {
         ctx.fillStyle = color;
         ctx.shadowColor = color; ctx.shadowBlur = 16;

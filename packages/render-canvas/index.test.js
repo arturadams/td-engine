@@ -7,6 +7,15 @@ import { TILE } from '../core/content.js';
 const { document } = new Window();
 // expose to renderer for document.createElement calls
 global.document = document;
+global.Image = class {
+  constructor() {
+    this.complete = true;
+    this.width = 16;
+    this.height = 16;
+  }
+  set src(v) { this._src = v; }
+  get src() { return this._src; }
+};
 
 function makeCtx() {
   const canvas = document.createElement('canvas');
@@ -93,6 +102,68 @@ describe('render-canvas', () => {
     const renderer = createCanvasRenderer({ ctx, engine: {}, options: { cacheMap: false, showBlocked: false, showBuildMask: false } });
     renderer.render(baseState());
     assert.strictEqual(calls.fillRect, 0, 'build mask suppressed when showBuildMask=false');
+  });
+
+  it('draws creep sprite when img provided', () => {
+    const ctx = makeCtx();
+    let args;
+    ctx.drawImage = (...a) => { args = a; };
+    const img = { complete: true, width: 16, height: 16 };
+    const state = baseState();
+    state.creeps.push({ x: 16, y: 16, hp: 1, maxhp: 1, img, w: 20, h: 12 });
+    const renderer = createCanvasRenderer({ ctx, engine: {}, options: { cacheMap: false, showBlocked: false } });
+    renderer.render(state);
+    assert.ok(args, 'drawImage called');
+    assert.strictEqual(args[1], -10, 'uses entity width');
+    assert.strictEqual(args[2], -6, 'uses entity height');
+    assert.strictEqual(args[3], 20, 'draws with provided width');
+    assert.strictEqual(args[4], 12, 'draws with provided height');
+  });
+
+  it('uses mapped creep sprite by type when no img provided', () => {
+    const ctx = makeCtx();
+    let used;
+    ctx.drawImage = (img) => { used = img.src; };
+    const state = baseState();
+    state.creeps.push({ x: 16, y: 16, hp: 1, maxhp: 1, type: 'Runner' });
+    const renderer = createCanvasRenderer({
+      ctx,
+      engine: {},
+      options: { cacheMap: false, showBlocked: false },
+      sprites: { creeps: { Runner: 'runner.svg' } }
+    });
+    renderer.render(state);
+    assert.strictEqual(used, 'runner.svg', 'mapped Runner sprite used');
+  });
+
+  it('falls back to tower shape when no img', () => {
+    const ctx = makeCtx();
+    let drew = false;
+    let drewImg = false;
+    ctx.arc = () => { drew = true; };
+    ctx.drawImage = () => { drewImg = true; };
+    const state = baseState();
+    state.towers.push({ id: 1, x: 16, y: 16, lvl: 1, range: 10, elt: 'FIRE' });
+    const renderer = createCanvasRenderer({ ctx, engine: {}, options: { cacheMap: false } });
+    renderer.render(state);
+    assert.ok(drew, 'arc called for fallback tower shape');
+    assert.strictEqual(drewImg, false, 'drawImage not called');
+  });
+
+  it('uses mapped tower sprite by element when no img provided', () => {
+    const ctx = makeCtx();
+    let used;
+    ctx.drawImage = (img) => { used = img.src; };
+    const state = baseState();
+    state.towers.push({ id: 1, x: 16, y: 16, lvl: 1, range: 10, elt: 'ICE' });
+    const renderer = createCanvasRenderer({
+      ctx,
+      engine: {},
+      options: { cacheMap: false },
+      sprites: { towers: { ICE: 'ice.svg' } }
+    });
+    renderer.render(state);
+    assert.strictEqual(used, 'ice.svg', 'mapped tower sprite used');
   });
 });
 

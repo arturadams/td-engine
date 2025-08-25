@@ -18,8 +18,27 @@ const renderer = createCanvasRenderer({
   ctx,
   engine,
   sprites: {
-    creeps: { default: 'sprites/creep.svg' },
-    towers: { default: 'sprites/tower.svg' },
+    creeps: {
+      Grunt: 'sprites/grunt.svg',
+      Runner: 'sprites/runner.svg',
+      Tank: 'sprites/tank.svg',
+      Shield: 'sprites/shield.svg',
+      Boss: 'sprites/boss.svg',
+      default: 'sprites/creep.svg',
+    },
+    towers: {
+      ARCHER: 'sprites/archer.svg',
+      SIEGE: 'sprites/siege.svg',
+      CANNON: 'sprites/siege.svg',
+      FIRE: 'sprites/fire.svg',
+      ICE: 'sprites/ice.svg',
+      LIGHT: 'sprites/light.svg',
+      POISON: 'sprites/poison.svg',
+      EARTH: 'sprites/earth.svg',
+      WIND: 'sprites/wind.svg',
+      ARCANE: 'sprites/arcane.svg',
+      default: 'sprites/tower.svg',
+    },
   },
 });
 

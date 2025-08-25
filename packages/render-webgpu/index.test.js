@@ -50,6 +50,28 @@ describe('render-webgpu', () => {
     assert.strictEqual(submitCalls.length, 1, 'commands submitted');
     global.navigator = oldNav;
   });
+
+  it('creates textures for entity images (stub)', async () => {
+    let textureCalls = 0;
+    const pass = { end() {} };
+    const encoder = { beginRenderPass() { return pass; }, finish() { return 'cmd'; } };
+    const device = {
+      createCommandEncoder() { return encoder; },
+      createTexture() { textureCalls++; return {}; },
+      queue: { submit() {} }
+    };
+    const adapter = { requestDevice: async () => device };
+    const gpu = { requestAdapter: async () => adapter, getPreferredCanvasFormat: () => 'rgba8unorm' };
+    const context = { configure() {}, getCurrentTexture: () => ({ createView: () => 'view' }) };
+    const canvas = { getContext: () => context };
+    const oldNav = global.navigator;
+    global.navigator = { gpu };
+    const renderer = await createWebGPURenderer({ canvas, engine: {} });
+    const img = { complete: true, width: 1, height: 1 };
+    renderer.render({ creeps: [{ img }] }, 0);
+    assert.strictEqual(textureCalls, 1, 'texture created for sprite');
+    global.navigator = oldNav;
+  });
 });
 
 console.log('render-webgpu tests passed');
