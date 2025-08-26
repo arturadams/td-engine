@@ -64,78 +64,68 @@ function sizeCanvasToCurrentMap() {
   fit();
 }
 
-// Mouse
+// Pointer events (tap/click to place/select, long-press to sell)
 canvas.addEventListener('contextmenu', e => e.preventDefault());
-canvas.addEventListener('mousemove', (e) => {
+let pressTimer = null;
+let pressStart = null;
+
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch' && !e.isPrimary) return;
   const { gx, gy } = gridFromEvent(canvas, e, TILE, GRID_W, GRID_H);
   engine.setHover(gx, gy);
 });
-canvas.addEventListener('mousedown', (e) => {
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'touch' && !e.isPrimary) return;
   const { gx, gy } = gridFromEvent(canvas, e, TILE, GRID_W, GRID_H);
-  if (e.button === 2) {
-    const t = engine.selectTowerAt(gx, gy);
-    if (t) { engine.sellTower(t.id); haptic(20); syncHud(); repaintTowerDetails(); }
-    return;
+  engine.setHover(gx, gy);
+
+  if (e.pointerType === 'mouse') {
+    if (e.button === 2) {
+      const t = engine.selectTowerAt(gx, gy);
+      if (t) { engine.sellTower(t.id); haptic(20); syncHud(); repaintTowerDetails(); }
+      return;
+    }
+    if (e.button !== 0) return;
   }
-  // Try selecting first
-  const t = engine.selectTowerAt(gx, gy);
-  if (!t) {
+
+  pressStart = { gx, gy };
+
+  if (e.pointerType === 'touch') {
+    pressTimer = setTimeout(() => {
+      const tower = engine.selectTowerAt(gx, gy);
+      if (tower) { engine.sellTower(tower.id); haptic(20); syncHud(); repaintTowerDetails(); }
+      pressTimer = null;
+      pressStart = null;
+    }, 500);
+  }
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (e.pointerType === 'touch' && !e.isPrimary) return;
+  if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  const start = pressStart;
+  pressStart = null;
+  if (!start) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const { gx, gy } = start;
+  const sel = engine.selectTowerAt(gx, gy);
+  if (!sel) {
     const affordable = engine.state.gold >= COST[engine.state.buildSel];
-    if (!affordable) { toast("Not enough gold"); haptic(35); return; }
-    const r = engine.placeTower(gx, gy, engine.state.buildSel);
-    if (!r.ok) { toast(r.reason.replaceAll('_', ' ')); haptic(35); }
-    else { haptic(10); }
+    if (!affordable) { toast("Not enough gold"); haptic(35); }
+    else {
+      const r = engine.placeTower(gx, gy, engine.state.buildSel);
+      if (!r.ok) { toast(r.reason.replaceAll('_', ' ')); haptic(35); }
+      else { haptic(10); }
+    }
   }
   syncHud(); repaintTowerDetails();
 });
 
-// Touch (tap to place/select, long-press to sell)
-let touchTimer = null;
-let touchStart = null;
-canvas.addEventListener('touchstart', (e) => {
-  if (e.touches.length !== 1) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const ge = gridFromEvent(canvas, e, TILE, GRID_W, GRID_H);
-  touchStart = { ...ge, time: performance.now() };
-  engine.setHover(ge.gx, ge.gy);
-  touchTimer = setTimeout(() => {
-    const tower = engine.selectTowerAt(ge.gx, ge.gy);
-    if (tower) { engine.sellTower(tower.id); haptic(20); syncHud(); repaintTowerDetails(); }
-    touchTimer = null;
-  }, 500);
-}, { passive: false });
-
-canvas.addEventListener('touchmove', (e) => {
-  if (e.touches.length !== 1) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const ge = gridFromEvent(canvas, e, TILE, GRID_W, GRID_H);
-  engine.setHover(ge.gx, ge.gy);
-}, { passive: false });
-
-canvas.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  if (touchTimer) {
-    clearTimeout(touchTimer);
-    touchTimer = null;
-    if (touchStart) {
-      const { gx, gy } = touchStart;
-      const sel = engine.selectTowerAt(gx, gy);
-      if (!sel) {
-        const affordable = engine.state.gold >= COST[engine.state.buildSel];
-        if (!affordable) { toast("Not enough gold"); haptic(35); }
-        else {
-          const r = engine.placeTower(gx, gy, engine.state.buildSel);
-          if (!r.ok) { toast(r.reason.replaceAll('_', ' ')); haptic(35); }
-          else { haptic(10); }
-        }
-      }
-      syncHud(); repaintTowerDetails();
-    }
-  }
-  touchStart = null;
-}, { passive: false });
+canvas.addEventListener('pointercancel', () => {
+  if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  pressStart = null;
+});
 
 function toLogical(canvas, e) {
   const rect = canvas.getBoundingClientRect();
