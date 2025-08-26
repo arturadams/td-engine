@@ -23,6 +23,8 @@ export function createEngine(seedState, userConfig) {
     const engine = {};
     engine.config = resolveConfig(userConfig);
 
+    const assetManager = engine.config.assetManager;
+
     const state = createInitialState(seedState);
 
     // spatial index for towers keyed by grid coords "gx,gy"
@@ -51,6 +53,7 @@ export function createEngine(seedState, userConfig) {
             gatherNeighborsFn: gatherNeighbors,
             neighborsSynergyFn: neighborsSynergy,
             onTowerPlace,
+            assetManager,
         });
     }
 
@@ -172,6 +175,9 @@ export function createEngine(seedState, userConfig) {
         const startPx = cellCenterForMap(state.map, start.x, start.y);
         const endPx = cellCenterForMap(state.map, state.map.end.x, state.map.end.y);
 
+        const spriteKey = base.sprite;
+        const img = assetManager?.getImage ? assetManager.getImage(spriteKey) : undefined;
+
         const cr = {
             id: uuid(),
             type,
@@ -186,7 +192,8 @@ export function createEngine(seedState, userConfig) {
             alive: true,
             path: (state.path && state.path.length >= 2)
                 ? [...state.path]
-                : [startPx, endPx]
+                : [startPx, endPx],
+            img,
         };
 
         state.creeps.push(cr);

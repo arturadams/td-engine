@@ -1,6 +1,6 @@
 // packages/core/engine/placement.js
 
-import { Elt, BLUEPRINT, COST, TILE, BASIC_TOWERS, REFUND_RATE } from '../content.js';
+import { Elt, BLUEPRINT, COST, TILE, BASIC_TOWERS, REFUND_RATE, EltSprite } from '../content.js';
 import { uuid } from '../rng.js';
 import { cellCenterForMap } from '../map.js';
 
@@ -93,7 +93,7 @@ export function canPlace(state, towerGrid, canBuildCell, gx, gy) {
 const normalizeElt = (e) => (e === 'CANNON' ? Elt.SIEGE : e);
 
 export function placeTower(state, towerGrid, canBuildCell, gx, gy, rawElt, opts) {
-    const { onGoldChange, recomputePathingForAll, gatherNeighborsFn = gatherNeighbors, neighborsSynergyFn = neighborsSynergy, onTowerPlace } = opts;
+    const { onGoldChange, recomputePathingForAll, gatherNeighborsFn = gatherNeighbors, neighborsSynergyFn = neighborsSynergy, onTowerPlace, assetManager } = opts;
     const elt = normalizeElt(rawElt);
     if (!inBounds(state, gx, gy)) return { ok: false, reason: 'oob' };
     if (state.towers.some(t => t.gx === gx && t.gy === gy)) return { ok: false, reason: 'occupied' };
@@ -117,10 +117,14 @@ export function placeTower(state, towerGrid, canBuildCell, gx, gy, rawElt, opts)
     if (cost == null || !bp) return { ok: false, reason: 'invalid_tower' };
     if (state.gold < cost) return { ok: false, reason: 'gold' };
 
+    const spriteKey = EltSprite[elt];
+    const img = assetManager?.getImage ? assetManager.getImage(spriteKey) : undefined;
+
     const t = {
         id: uuid(), gx, gy,
         x: gx * TILE + TILE / 2, y: gy * TILE + TILE / 2,
         elt, lvl: 1, xp: 0, tree: [],
+        img,
         range: bp.range, firerate: bp.firerate, dmg: bp.dmg, type: bp.type, status: bp.status,
         cooldown: 0, spent: cost,
         mod: { dmg: 0, burn: 0, poison: 0, chill: 0, slowDur: 0, chainBounce: 0, chainRange: 0, stun: 0, aoe: 0, splash: 0,
