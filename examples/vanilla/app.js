@@ -159,7 +159,12 @@ function refreshBuildPalette() {
     btn.classList.toggle('opacity-50', !affordable);
     btn.classList.toggle('pointer-events-none', !affordable);
     const label = elt[0] + elt.slice(1).toLowerCase();
-    btn.textContent = `${label} (${COST[elt]})`;
+    if (btn.dataset.icon) {
+      btn.title = `${label} (${COST[elt]})`;
+      btn.style.borderColor = EltColor[elt];
+    } else {
+      btn.textContent = `${label} (${COST[elt]})`;
+    }
   });
 }
 
@@ -172,6 +177,53 @@ function wirePaletteButtons(scope = document) {
   });
 }
 wirePaletteButtons(document);
+
+// Mobile tower details popup (long-press + slide)
+const towerBar = document.getElementById('towerBar');
+const towerPopup = document.getElementById('towerPopup');
+if (towerBar && towerPopup) {
+  let tpTimer = null;
+  let tpActive = false;
+  let tpCurrent = null;
+
+  const showPopup = (elt) => {
+    const label = elt[0] + elt.slice(1).toLowerCase();
+    towerPopup.textContent = `${label} (${COST[elt]})`;
+    towerPopup.style.opacity = '0';
+    towerPopup.classList.remove('hidden');
+    requestAnimationFrame(() => { towerPopup.style.opacity = '1'; });
+  };
+  const hidePopup = () => {
+    towerPopup.style.opacity = '0';
+    setTimeout(() => towerPopup.classList.add('hidden'), 200);
+  };
+  const cancel = () => {
+    if (tpTimer) clearTimeout(tpTimer);
+    if (tpActive) hidePopup();
+    tpTimer = null; tpActive = false; tpCurrent = null;
+  };
+
+  towerBar.addEventListener('pointerdown', (e) => {
+    const btn = e.target.closest('[data-elt]');
+    if (!btn) return;
+    tpCurrent = btn.dataset.elt;
+    tpTimer = setTimeout(() => { tpActive = true; showPopup(tpCurrent); }, 400);
+  });
+  towerBar.addEventListener('pointermove', (e) => {
+    if (!tpActive) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-elt]');
+    if (el && el.dataset.elt !== tpCurrent) {
+      tpCurrent = el.dataset.elt;
+      showPopup(tpCurrent);
+    }
+  });
+  towerBar.addEventListener('pointerup', () => {
+    if (tpActive && tpCurrent) { engine.setBuild(tpCurrent); refreshBuildPalette(); hidePopup(); }
+    cancel();
+  });
+  towerBar.addEventListener('pointerleave', cancel);
+  towerBar.addEventListener('pointercancel', cancel);
+}
 
 // Hotkeys
 window.addEventListener('keydown', (e) => {
@@ -201,6 +253,20 @@ const binds = {
 
 let waveTime = 0;
 let waveRunning = false;
+const mPlay = document.getElementById('mPlay');
+
+function updatePlayButton() {
+  if (!mPlay) return;
+  mPlay.textContent = '▶';
+  mPlay.classList.remove('bg-green-600', 'bg-yellow-600', 'bg-slate-800');
+  if (engine.state.autoWaveEnabled) {
+    mPlay.classList.add('bg-green-600');
+  } else if (waveRunning) {
+    mPlay.classList.add('bg-yellow-600');
+  } else {
+    mPlay.classList.add('bg-slate-800');
+  }
+}
 
 function syncHud() {
   const h = buildHudSnapshot(engine.state);
@@ -210,6 +276,7 @@ function syncHud() {
   binds.waveTimer.forEach(el => el.textContent = '');
   refreshBuildPalette();
   repaintTowerDetails(false);
+  updatePlayButton();
 }
 
 async function repaintTowerDetails(force = true) {
@@ -287,9 +354,16 @@ const updateSpeedLabel = () => { if (fastBtn) fastBtn.textContent = (engine.stat
 fastBtn && (fastBtn.onclick = () => { engine.cycleSpeed(); updateSpeedLabel(); });
 updateSpeedLabel();
 
-document.getElementById('mStart')?.addEventListener('click', () => engine.startWave());
-document.getElementById('mPause')?.addEventListener('click', () => engine.setPaused(!engine.state.paused));
-document.getElementById('mFast')?.addEventListener('click', () => engine.cycleSpeed());
+mPlay?.addEventListener('click', () => {
+  if (engine.state.autoWaveEnabled) {
+    engine.setAutoWave(false, engine.state.autoWaveDelay);
+  } else if (waveRunning) {
+    engine.setAutoWave(true, engine.state.autoWaveDelay);
+  } else {
+    engine.startWave();
+  }
+  updatePlayButton();
+});
 
 const goModal = document.getElementById('goModal');
 const goBody = document.getElementById('goBody');
@@ -307,8 +381,8 @@ document.getElementById('goRestart')?.addEventListener('click', () => {
 // ---------- Event-driven UI refresh ----------
 engine.hook('goldChange', () => syncHud());
 engine.hook('creepKill', () => syncHud());
-engine.hook('waveStart', () => { waveTime = 0; waveRunning = true; });
-engine.hook('waveEnd', () => { waveRunning = false; waveTime = 0; syncHud(); });
+engine.hook('waveStart', () => { waveTime = 0; waveRunning = true; updatePlayButton(); });
+engine.hook('waveEnd', () => { waveRunning = false; waveTime = 0; syncHud(); updatePlayButton(); });
 engine.hook('lifeChange', () => syncHud());
 
 engine.hook('mapChange', ({ size }) => {
@@ -332,8 +406,6 @@ engine.hook('speedChange', ({ speed }) => {
   const label = (speed === 1 ? '1×' : speed === 2 ? '2×' : '4×');
   const fastElem = document.getElementById('fast');
   if (fastElem) fastElem.textContent = label;
-  const mFastElem = document.getElementById('mFast');
-  if (mFastElem) mFastElem.textContent = label;
 });
 
 engine.hook('gameOver', (ev) => {
@@ -394,6 +466,7 @@ engine.hook('autoWaveChange', ({ enabled, delay }) => {
   if (awToggle) awToggle.checked = !!enabled;
   if (awHUD) awHUD.checked = !!enabled;
   if (awDelay && typeof delay === 'number') awDelay.value = String(delay);
+  updatePlayButton();
 });
 
 if (awToggle) awToggle.checked = engine.state.autoWaveEnabled;
