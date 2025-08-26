@@ -29,8 +29,9 @@ export function attachViewportFit(canvas, {
     // main fit routine
     function fit() {
         // logical canvas size (set by app from map size)
-        const cw = canvas.width;
-        const ch = canvas.height;
+        const dpr = window.devicePixelRatio || 1;
+        const cw = canvas.width / dpr;
+        const ch = canvas.height / dpr;
         if (!cw || !ch) return;
 
         // available css box
@@ -68,6 +69,19 @@ export function attachViewportFit(canvas, {
         window.visualViewport.addEventListener('scroll', onResize);
     }
 
+    // refit when devicePixelRatio changes
+    let dprMql = null;
+    function watchDpr() {
+        if (dprMql) dprMql.removeEventListener('change', onDprChange);
+        dprMql = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+        dprMql.addEventListener('change', onDprChange);
+    }
+    function onDprChange() {
+        fit();
+        watchDpr();
+    }
+    watchDpr();
+
     // refit when header / toolbar change size (responsive, dynamic content)
     const ro = 'ResizeObserver' in window ? new ResizeObserver(onResize) : null;
     if (ro) {
@@ -85,6 +99,7 @@ export function attachViewportFit(canvas, {
                 window.visualViewport.removeEventListener('resize', onResize);
                 window.visualViewport.removeEventListener('scroll', onResize);
             }
+            if (dprMql) dprMql.removeEventListener('change', onDprChange);
             if (ro) ro.disconnect();
             document.documentElement.style.overflowY = '';
             document.body.style.overflowY = '';

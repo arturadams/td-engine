@@ -59,10 +59,26 @@ function toast(msg) {
 
 function sizeCanvasToCurrentMap() {
   const { cols, rows } = engine.state.map.size;
-  canvas.width = cols * TILE;
-  canvas.height = rows * TILE;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = cols * TILE * dpr;
+  canvas.height = rows * TILE * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   fit();
 }
+
+let dprMql;
+function watchDevicePixelRatio() {
+  if (dprMql) dprMql.removeEventListener('change', onDevicePixelRatioChange);
+  dprMql = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+  dprMql.addEventListener('change', onDevicePixelRatioChange);
+}
+
+function onDevicePixelRatioChange() {
+  sizeCanvasToCurrentMap();
+  watchDevicePixelRatio();
+}
+
+watchDevicePixelRatio();
 
 // Mouse
 canvas.addEventListener('contextmenu', e => e.preventDefault());
