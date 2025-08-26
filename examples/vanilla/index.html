@@ -10,7 +10,7 @@
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%238b5cf6'/%3E%3Ccircle cx='24' cy='28' r='6' fill='%23ef4444'/%3E%3Ccircle cx='42' cy='38' r='6' fill='%2338bdf8'/%3E%3C/svg%3E" />
   <style>
     :root {
-      --toolbar-h: 88px;
+      --toolbar-h: 128px;
     }
 
     body {
@@ -92,29 +92,30 @@
     </aside>
   </div>
 
-  <!-- Mobile bottom toolbar (single source of truth on mobile) -->
+  <!-- Mobile bottom toolbar (play button + tower bar) -->
   <div
     class="mobile-toolbar fixed md:hidden inset-x-0 bottom-0 pb-[env(safe-area-inset-bottom)] bg-[rgba(5,8,16,.9)] border-t border-slate-700/60 backdrop-blur"
     id="mToolbar" style="height:var(--toolbar-h)">
-    <div class="max-w-[1200px] mx-auto h-full px-3 flex items-center justify-between gap-2">
-      <div class="flex gap-2">
-        <button id="mStart" class="px-3 py-2 border rounded text-sm">Start</button>
-        <button id="mPause" class="px-3 py-2 border rounded text-sm">Pause</button>
-        <button id="mFast" class="px-3 py-2 border rounded text-sm">FF</button>
+    <div class="max-w-[1200px] mx-auto h-full px-3 flex flex-col justify-center gap-2 relative">
+      <div class="flex items-center justify-between">
+        <button id="mPlay" class="w-12 h-12 rounded-full border border-slate-600 flex items-center justify-center text-xl bg-slate-800 select-none touch-manipulation">
+          ▶
+        </button>
+        <div class="text-xs opacity-80">Gold <span data-bind="gold">-</span> • Lives <span data-bind="lives">-</span> •
+          Wave <span data-bind="wave">-</span><span data-bind="waveTimer" class="ml-1"></span></div>
       </div>
-      <div class="text-xs opacity-80">Gold <span data-bind="gold">-</span> • Lives <span data-bind="lives">-</span> •
-        Wave <span data-bind="wave">-</span><span data-bind="waveTimer" class="ml-1"></span></div>
-      <div class="grid grid-cols-3 gap-2 ml-2">
-        <button data-elt="ARCHER" class="px-3 py-2 border rounded text-xs">Archer</button>
-        <button data-elt="SIEGE" class="px-3 py-2 border rounded text-xs">Siege</button>
-        <button data-elt="FIRE" class="px-3 py-2 border rounded text-xs">Fire</button>
-        <button data-elt="ICE" class="px-3 py-2 border rounded text-xs">Ice</button>
-        <button data-elt="LIGHT" class="px-3 py-2 border rounded text-xs">Lightning</button>
-        <button data-elt="POISON" class="px-3 py-2 border rounded text-xs">Poison</button>
-        <button data-elt="EARTH" class="px-3 py-2 border rounded text-xs">Earth</button>
-        <button data-elt="WIND" class="px-3 py-2 border rounded text-xs">Wind</button>
-        <button data-elt="ARCANE" class="px-3 py-2 border rounded text-xs">Arcane</button>
+      <div id="towerBar" class="flex gap-2 overflow-x-auto overflow-y-hidden touch-pan-x select-none">
+        <button data-elt="ARCHER" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/archer.svg')"></button>
+        <button data-elt="SIEGE" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/siege.svg')"></button>
+        <button data-elt="FIRE" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/fire.svg')"></button>
+        <button data-elt="ICE" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/ice.svg')"></button>
+        <button data-elt="LIGHT" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/light.svg')"></button>
+        <button data-elt="POISON" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/poison.svg')"></button>
+        <button data-elt="EARTH" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/earth.svg')"></button>
+        <button data-elt="WIND" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/wind.svg')"></button>
+        <button data-elt="ARCANE" data-icon class="w-10 h-10 border rounded flex-none bg-center bg-no-repeat bg-[length:80%] select-none" style="background-image:url('./sprites/arcane.svg')"></button>
       </div>
+      <div id="towerPopup" class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden px-3 py-2 rounded bg-slate-900 border border-slate-700 text-xs opacity-0 transition-opacity"></div>
     </div>
   </div>
 
