@@ -19,25 +19,25 @@ const renderer = createCanvasRenderer({
   engine,
   sprites: {
     creeps: {
-      Grunt: 'sprites/grunt.svg',
-      Runner: 'sprites/runner.svg',
-      Tank: 'sprites/tank.svg',
-      Shield: 'sprites/shield.svg',
-      Boss: 'sprites/boss.svg',
-      default: 'sprites/creep.svg',
+      Grunt: './sprites/grunt.svg',
+      Runner: './sprites/runner.svg',
+      Tank: './sprites/tank.svg',
+      Shield: './sprites/shield.svg',
+      Boss: './sprites/boss.svg',
+      default: './sprites/creep.svg',
     },
     towers: {
-      ARCHER: 'sprites/archer.svg',
-      SIEGE: 'sprites/siege.svg',
-      CANNON: 'sprites/siege.svg',
-      FIRE: 'sprites/fire.svg',
-      ICE: 'sprites/ice.svg',
-      LIGHT: 'sprites/light.svg',
-      POISON: 'sprites/poison.svg',
-      EARTH: 'sprites/earth.svg',
-      WIND: 'sprites/wind.svg',
-      ARCANE: 'sprites/arcane.svg',
-      default: 'sprites/tower.svg',
+      ARCHER: './sprites/archer.svg',
+      SIEGE: './sprites/siege.svg',
+      CANNON: './sprites/siege.svg',
+      FIRE: './sprites/fire.svg',
+      ICE: './sprites/ice.svg',
+      LIGHT: './sprites/light.svg',
+      POISON: './sprites/poison.svg',
+      EARTH: './sprites/earth.svg',
+      WIND: './sprites/wind.svg',
+      ARCANE: './sprites/arcane.svg',
+      default: './sprites/tower.svg',
     },
   },
 });
@@ -162,6 +162,8 @@ function refreshBuildPalette() {
     if (btn.dataset.icon) {
       btn.title = `${label} (${COST[elt]})`;
       btn.style.borderColor = EltColor[elt];
+      btn.style.backgroundColor = `${EltColor[elt]}33`;
+      btn.style.userSelect = 'none';
     } else {
       btn.textContent = `${label} (${COST[elt]})`;
     }
@@ -181,6 +183,7 @@ wirePaletteButtons(document);
 // Mobile tower details popup (long-press + slide)
 const towerBar = document.getElementById('towerBar');
 const towerPopup = document.getElementById('towerPopup');
+towerBar && (towerBar.style.touchAction = 'pan-x');
 if (towerBar && towerPopup) {
   let tpTimer = null;
   let tpActive = false;
@@ -354,7 +357,8 @@ const updateSpeedLabel = () => { if (fastBtn) fastBtn.textContent = (engine.stat
 fastBtn && (fastBtn.onclick = () => { engine.cycleSpeed(); updateSpeedLabel(); });
 updateSpeedLabel();
 
-mPlay?.addEventListener('click', () => {
+mPlay?.addEventListener('pointerup', (e) => {
+  e.preventDefault();
   if (engine.state.autoWaveEnabled) {
     engine.setAutoWave(false, engine.state.autoWaveDelay);
   } else if (waveRunning) {
