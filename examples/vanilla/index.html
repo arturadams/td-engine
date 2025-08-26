@@ -77,16 +77,43 @@
     <!-- Sidebar: desktop only -->
     <aside class="col-span-12 md:col-span-4 space-y-2 hidden md:block">
       <div class="text-xs uppercase">Build</div>
-      <div class="grid grid-cols-3 gap-2">
-        <button data-elt="ARCHER" class="px-2 py-2 border rounded">Archer</button>
-        <button data-elt="SIEGE" class="px-2 py-2 border rounded">Siege</button>
-        <button data-elt="FIRE" class="px-2 py-2 border rounded">Fire</button>
-        <button data-elt="ICE" class="px-2 py-2 border rounded">Ice</button>
-        <button data-elt="LIGHT" class="px-2 py-2 border rounded">Lightning</button>
-        <button data-elt="POISON" class="px-2 py-2 border rounded">Poison</button>
-        <button data-elt="EARTH" class="px-2 py-2 border rounded">Earth</button>
-        <button data-elt="WIND" class="px-2 py-2 border rounded">Wind</button>
-        <button data-elt="ARCANE" class="px-2 py-2 border rounded">Arcane</button>
+      <div class="flex overflow-x-auto gap-2">
+        <button data-elt="ARCHER" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Archer">
+          <img src="./sprites/archer.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Archer</span>
+        </button>
+        <button data-elt="SIEGE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Siege">
+          <img src="./sprites/siege.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Siege</span>
+        </button>
+        <button data-elt="FIRE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Fire">
+          <img src="./sprites/fire.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Fire</span>
+        </button>
+        <button data-elt="ICE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Ice">
+          <img src="./sprites/ice.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Ice</span>
+        </button>
+        <button data-elt="LIGHT" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Lightning">
+          <img src="./sprites/light.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Lightning</span>
+        </button>
+        <button data-elt="POISON" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Poison">
+          <img src="./sprites/poison.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Poison</span>
+        </button>
+        <button data-elt="EARTH" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Earth">
+          <img src="./sprites/earth.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Earth</span>
+        </button>
+        <button data-elt="WIND" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Wind">
+          <img src="./sprites/wind.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Wind</span>
+        </button>
+        <button data-elt="ARCANE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Arcane">
+          <img src="./sprites/arcane.svg" alt="" class="w-6 h-6" aria-hidden="true">
+          <span class="text-xs leading-tight">Arcane</span>
+        </button>
       </div>
       <div id="towerInfo" class="text-sm border rounded p-2 min-h-[140px]">—</div>
     </aside>
@@ -104,19 +131,46 @@
       </div>
       <div class="text-xs opacity-80">Gold <span data-bind="gold">-</span> • Lives <span data-bind="lives">-</span> •
         Wave <span data-bind="wave">-</span><span data-bind="waveTimer" class="ml-1"></span></div>
-      <div class="grid grid-cols-3 gap-2 ml-2">
-        <button data-elt="ARCHER" class="px-3 py-2 border rounded text-xs">Archer</button>
-        <button data-elt="SIEGE" class="px-3 py-2 border rounded text-xs">Siege</button>
-        <button data-elt="FIRE" class="px-3 py-2 border rounded text-xs">Fire</button>
-        <button data-elt="ICE" class="px-3 py-2 border rounded text-xs">Ice</button>
-        <button data-elt="LIGHT" class="px-3 py-2 border rounded text-xs">Lightning</button>
-        <button data-elt="POISON" class="px-3 py-2 border rounded text-xs">Poison</button>
-        <button data-elt="EARTH" class="px-3 py-2 border rounded text-xs">Earth</button>
-        <button data-elt="WIND" class="px-3 py-2 border rounded text-xs">Wind</button>
-        <button data-elt="ARCANE" class="px-3 py-2 border rounded text-xs">Arcane</button>
+        <div class="flex overflow-x-auto gap-2 ml-2">
+          <button data-elt="ARCHER" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Archer">
+            <img src="./sprites/archer.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Archer</span>
+          </button>
+          <button data-elt="SIEGE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Siege">
+            <img src="./sprites/siege.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Siege</span>
+          </button>
+          <button data-elt="FIRE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Fire">
+            <img src="./sprites/fire.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Fire</span>
+          </button>
+          <button data-elt="ICE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Ice">
+            <img src="./sprites/ice.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Ice</span>
+          </button>
+          <button data-elt="LIGHT" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Lightning">
+            <img src="./sprites/light.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Lightning</span>
+          </button>
+          <button data-elt="POISON" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Poison">
+            <img src="./sprites/poison.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Poison</span>
+          </button>
+          <button data-elt="EARTH" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Earth">
+            <img src="./sprites/earth.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Earth</span>
+          </button>
+          <button data-elt="WIND" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Wind">
+            <img src="./sprites/wind.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Wind</span>
+          </button>
+          <button data-elt="ARCANE" class="h-12 min-w-12 border rounded flex flex-col items-center justify-center text-sm" aria-label="Arcane">
+            <img src="./sprites/arcane.svg" alt="" class="w-6 h-6" aria-hidden="true">
+            <span class="text-xs leading-tight">Arcane</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
   <!-- Game Over Modal -->
   <div id="goModal" class="fixed inset-0 hidden items-center justify-center z-50">
