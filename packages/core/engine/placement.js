@@ -120,6 +120,8 @@ export function placeTower(state, towerGrid, canBuildCell, gx, gy, rawElt, opts)
     const t = {
         id: uuid(), gx, gy,
         x: gx * TILE + TILE / 2, y: gy * TILE + TILE / 2,
+        z: bp.z ?? 0,
+        baseZ: bp.z ?? 0,
         elt, lvl: 1, xp: 0, tree: [],
         range: bp.range, firerate: bp.firerate, dmg: bp.dmg, type: bp.type, status: bp.status,
         cooldown: 0, spent: cost,

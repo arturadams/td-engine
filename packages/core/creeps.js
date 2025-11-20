@@ -4,6 +4,7 @@
 import { cellCenterForMap } from './map.js';
 import { tickStatusesAndCombos } from './combat.js';
 import { getDeathFx } from './deaths/index.js';
+import { arcHeight, clamp01 } from './arc.js';
 
 export function recomputePathingForAll(state, isBlocked) {
   const { start, end, size } = state.map;
@@ -108,6 +109,8 @@ export function advanceCreep(state, c, onLeak) {
   }
   c.x += c._dirx * speed * state.dt; c.y += c._diry * speed * state.dt; c.t += speed * state.dt;
   if (c.t >= c._len) { c.seg++; c.t = 0; c.x = c.path[c.seg].x; c.y = c.path[c.seg].y; c._seg = c.seg - 1; }
+
+  updateCreepArc(state, c);
 }
 
 export function cullDead(state, { onKill }) {
@@ -132,4 +135,16 @@ function toCell(state, x, y) {
   const gx = Math.max(0, Math.min(cols - 1, Math.floor(x / TILE)));
   const gy = Math.max(0, Math.min(rows - 1, Math.floor(y / TILE)));
   return { gx, gy };
+}
+
+function updateCreepArc(state, c) {
+  const baseZ = c.baseZ ?? c.z ?? 0;
+  if (c.baseZ == null) c.baseZ = baseZ;
+  if (!c.arc) { if (c.z == null) c.z = baseZ; return; }
+
+  const flight = c.arc.flightTime || 0;
+  c.arcTimer = (c.arcTimer ?? 0) + state.dt;
+  const progress = flight > 0 ? clamp01(c.arcTimer / flight) : 1;
+  c.arcProgress = progress;
+  c.z = baseZ + arcHeight(c.arc.apex ?? 0, progress);
 }
