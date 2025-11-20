@@ -2,15 +2,17 @@
 // State now carries a "map" (validated by engine.loadMap)
 
 import { createDefaultMap, cellCenterForMap } from './map.js';
-import { makeRng } from './rng.js';
+import { makeIdGenerator, makeRng } from './rng.js';
 import { Elt, ResistProfiles } from './content.js';
 
 export function createInitialState(seedState) {
     const rng = makeRng(seedState?.seed ?? undefined);
+    const idGen = makeIdGenerator(rng.seed);
     const map = seedState?.map ?? createDefaultMap();
     return {
         rng,
         seed: rng.seed,
+        idGen,
         map,
 
         gold: 250,
@@ -62,6 +64,7 @@ export function createInitialState(seedState) {
 export function resetState(state, keep = {}) {
     const seed = keep.seed ?? state.seed;
     const rng = state.rng;
+    state.idGen = makeIdGenerator(seed);
 
     Object.assign(state, {
         rng, seed,

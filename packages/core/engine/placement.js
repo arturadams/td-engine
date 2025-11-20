@@ -1,7 +1,6 @@
 // packages/core/engine/placement.js
 
 import { Elt, BLUEPRINT, COST, TILE, BASIC_TOWERS, REFUND_RATE } from '../content.js';
-import { uuid } from '../rng.js';
 import { cellCenterForMap } from '../map.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -118,7 +117,7 @@ export function placeTower(state, towerGrid, canBuildCell, gx, gy, rawElt, opts)
     if (state.gold < cost) return { ok: false, reason: 'gold' };
 
     const t = {
-        id: uuid(), gx, gy,
+        id: state.idGen(), gx, gy,
         x: gx * TILE + TILE / 2, y: gy * TILE + TILE / 2,
         z: bp.z ?? 0,
         baseZ: bp.z ?? 0,

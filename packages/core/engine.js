@@ -7,7 +7,6 @@ import { recomputePathingForAll, advanceCreep, cullDead } from './creeps.js';
 import { fireTower } from './towers.js';
 import { updateBullets } from './bullets.js';
 import { updateParticles, clearParticlePool } from './particles.js';
-import { uuid } from './rng.js';
 import { validateMap, makeBuildableChecker, cellCenterForMap } from './map.js';
 import { attachStats } from './stats.js';
 import { rebuildCreepGrid } from './spatial.js';
@@ -231,7 +230,7 @@ export function createEngine(seedState, userConfig) {
         const endPx = cellCenterForMap(state.map, state.map.end.x, state.map.end.y);
 
         const cr = {
-            id: uuid(),
+            id: state.idGen(),
             type,
             x: startPx.x, y: startPx.y,
             z: base.z ?? 0,
