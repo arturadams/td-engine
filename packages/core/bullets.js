@@ -95,7 +95,16 @@ export function updateBullets(state, { onCreepDamage }) {
                         takeDamage(c, b.dmg, b.elt, c.status.resShred || 0);
                         applyStatus(c, b.status, { mod: b.mod });
                         hitAny = true;
-                        onCreepDamage?.({ creep: c, amount: b.dmg, elt: b.elt, towerId: b.fromId });
+                        onCreepDamage?.({
+                            creep: c,
+                            amount: b.dmg,
+                            elt: b.elt,
+                            towerId: b.fromId,
+                            hitX: b.x,
+                            hitY: b.y,
+                            targetX: c.x,
+                            targetY: c.y,
+                        });
                     }
                 }
                 if (hitAny) state.hits++;
