@@ -25,6 +25,10 @@ export function createEngine(seedState, userConfig) {
 
     const state = createInitialState(seedState);
 
+    let accumulator = 0;
+    const fixedStep = engine.config.fixedStep || (1 / 60);
+    const maxSubSteps = engine.config.maxSubSteps || 240;
+
     // spatial index for towers keyed by grid coords "gx,gy"
     const towerGrid = new Map();
     const gridKey = (gx, gy) => `${gx},${gy}`;
@@ -133,6 +137,22 @@ export function createEngine(seedState, userConfig) {
             startWave,
             onCreepDamage,
         });
+        state.alpha = 0;
+        return { alpha: 0 };
+    }
+
+    function update(dt) {
+        const delta = Math.max(0, Number(dt) || 0);
+        accumulator = clamp(accumulator + delta * (state.speed || 1), 0, fixedStep * (maxSubSteps + 1));
+        let steps = 0;
+        while (accumulator >= fixedStep && steps < maxSubSteps) {
+            step(fixedStep);
+            accumulator -= fixedStep;
+            steps += 1;
+        }
+        const alpha = clamp(accumulator / fixedStep, 0, 1);
+        state.alpha = alpha;
+        return { alpha, steps };
     }
 
     function startWave() {
@@ -348,6 +368,7 @@ export function createEngine(seedState, userConfig) {
         // waves/runtime
         startWave,
         step,
+        update,
         setPaused,
         setSpeed,
         cycleSpeed,

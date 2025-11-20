@@ -4,6 +4,8 @@ export function step(state, dt, deps) {
     const { waves, advanceCreep, rebuildCreepGrid, fireTower, updateBullets, updateParticles, cullDead, onCreepLeak, onLifeChange, onCreepKill, onGoldChange, onShot, onHit, startWave } = deps;
     if (state.paused || state.gameOver) return;
     state.dt = dt;
+    state.ticks = (state.ticks || 0) + 1;
+    state.logicTime = (state.logicTime || 0) + dt;
 
     waves.stepSpawner(dt);
 

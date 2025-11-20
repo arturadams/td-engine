@@ -8,6 +8,8 @@ export const defaultConfig = {
   renderer: 'webgpu',
   sound: 'sfx',
   speeds: { creep: 1, tower: 1 },
+  fixedStep: 1 / 60,
+  maxSubSteps: 240,
 };
 
 export function resolveConfig(user = {}) {

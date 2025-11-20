@@ -21,6 +21,9 @@ export function createInitialState(seedState) {
         combos: 0,
         shots: 0,
         hits: 0,
+        ticks: 0,
+        logicTime: 0,
+        alpha: 0,
         paused: false,
         speed: 1,
         autoWaveEnabled: false,
@@ -63,7 +66,7 @@ export function resetState(state, keep = {}) {
     Object.assign(state, {
         rng, seed,
         gold: 250, lives: 20, wave: 0, spree: 0, score: 0,
-        combos: 0, shots: 0, hits: 0,
+        combos: 0, shots: 0, hits: 0, ticks: 0, logicTime: 0, alpha: 0,
         paused: false, speed: 1,
         autoWaveEnabled: keep.autoWaveEnabled ?? false,
         autoWaveDelay: keep.autoWaveDelay ?? 1200, _autoWaveTimer: -1,
