@@ -100,8 +100,8 @@ function handleMeteors(state, { onHit, onCreepDamage }, t, dt) {
         if (c) {
             takeDamage(c, t.dmg, t.elt, c.status.resShred || 0);
             applyStatus(c, t.status, t);
-            onHit?.(t.id);
-            onCreepDamage?.({ creep: c, amount: t.dmg, elt: t.elt, towerId: t.id });
+            onHit?.({ towerId: t.id, targetId: c.id, targetType: c.type, hitX: c.x, hitY: c.y });
+            onCreepDamage?.({ creep: c, amount: t.dmg, elt: t.elt, towerId: t.id, hitX: c.x, hitY: c.y, targetX: c.x, targetY: c.y });
         }
     }
 }
@@ -126,11 +126,14 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
     });
     state.bullets.push(b);
 
-    const hit = state.rng() < acc; if (hit) { state.hits++; onHit?.(t.id); }
+    const hit = state.rng() < acc; if (hit) {
+        state.hits++;
+        onHit?.({ towerId: t.id, targetId: target.id, targetType: target.type, hitX: target.x, hitY: target.y });
+    }
     if (hit) {
         takeDamage(target, dmg, t.elt, target.status.resShred || 0);
         applyStatus(target, t.status, t);
-        onCreepDamage?.({ creep: target, amount: dmg, elt: t.elt, towerId: t.id });
+        onCreepDamage?.({ creep: target, amount: dmg, elt: t.elt, towerId: t.id, hitX: target.x, hitY: target.y, targetX: target.x, targetY: target.y });
 
         if (t.mod.pierce && t.mod.pierce > 0) {
             const dirx = target.x - t.x, diry = target.y - t.y; const len = Math.sqrt(dirx * dirx + diry * diry);
@@ -145,8 +148,8 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
                     if (dist < 10) {
                         takeDamage(c, dmg * 0.7, t.elt, c.status.resShred || 0);
                         applyStatus(c, t.status, t);
-                        onHit?.(t.id);
-                        onCreepDamage?.({ creep: c, amount: dmg * 0.7, elt: t.elt, towerId: t.id });
+                        onHit?.({ towerId: t.id, targetId: c.id, targetType: c.type, hitX: c.x, hitY: c.y });
+                        onCreepDamage?.({ creep: c, amount: dmg * 0.7, elt: t.elt, towerId: t.id, hitX: c.x, hitY: c.y, targetX: c.x, targetY: c.y });
                         remaining--; if (remaining <= 0) break;
                     }
                 }
@@ -157,11 +160,11 @@ function attemptBoltHit(state, { onHit, onCreepDamage }, t, target, dmg, acc) {
     return hit;
 }
 
-function boltStrategy(state, callbacks, t, target, dmg, acc) {
+function boltStrategy(state, callbacks, t, target, dmg, acc, _shotEvent) {
     attemptBoltHit(state, callbacks, t, target, dmg, acc);
 }
 
-function chainStrategy(state, callbacks, t, target, dmg, acc) {
+function chainStrategy(state, callbacks, t, target, dmg, acc, _shotEvent) {
     const hit = attemptBoltHit(state, callbacks, t, target, dmg, acc);
     if (!hit) return;
 
@@ -196,13 +199,13 @@ function chainStrategy(state, callbacks, t, target, dmg, acc) {
         applyStatus(next, t.status, t);
         if (t.mod.stunChain) next.status.stun = Math.max(next.status.stun || 0, 0.25);
         if (t.mod.lightDot) next.status.lightDot = { dot: t.mod.lightDot, t: 1.5 };
-        callbacks.onHit?.(t.id);
-        callbacks.onCreepDamage?.({ creep: next, amount: dmg * 0.6, elt: t.elt, towerId: t.id });
+        callbacks.onHit?.({ towerId: t.id, targetId: next.id, targetType: next.type, hitX: next.x, hitY: next.y });
+        callbacks.onCreepDamage?.({ creep: next, amount: dmg * 0.6, elt: t.elt, towerId: t.id, hitX: next.x, hitY: next.y, targetX: next.x, targetY: next.y });
         last = next;
     }
 }
 
-function splashStrategy(state, { onShot }, t, target, dmg) {
+function splashStrategy(state, { onShot }, t, target, dmg, _acc, shotEvent) {
     const dx = target.x - t.x, dy = target.y - t.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     const speed = 260;
@@ -224,13 +227,13 @@ function splashStrategy(state, { onShot }, t, target, dmg) {
     });
     state.bullets.push(b);
     state.shots++;
-    onShot?.(t.id);
+    onShot?.(shotEvent || { towerId: t.id, towerX: t.x, towerY: t.y, targetId: target?.id || null, targetX: target?.x ?? null, targetY: target?.y ?? null });
     t.cooldown = 1 / t.firerate;
 }
 
 // Siege/cannon towers lob heavy projectiles with a wider explosion radius
 // and slower travel speed than standard splash towers.
-function siegeStrategy(state, { onShot }, t, target, dmg) {
+function siegeStrategy(state, { onShot }, t, target, dmg, _acc, shotEvent) {
     const dx = target.x - t.x, dy = target.y - t.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     const speed = 180; // slower projectile
@@ -252,7 +255,7 @@ function siegeStrategy(state, { onShot }, t, target, dmg) {
     });
     state.bullets.push(b);
     state.shots++;
-    onShot?.(t.id);
+    onShot?.(shotEvent || { towerId: t.id, towerX: t.x, towerY: t.y, targetId: target?.id || null, targetX: target?.x ?? null, targetY: target?.y ?? null });
     t.cooldown = 1 / t.firerate;
 }
 
@@ -273,8 +276,16 @@ export function fireTower(state, callbacks, t, dt) {
 
     const dmg = t.dmg * (1 + t.mod.dmg + t.synergy);
     const acc = 0.98; state.shots++;
-    callbacks.onShot?.(t.id);
+    const shotEvent = {
+        towerId: t.id,
+        towerX: t.x,
+        towerY: t.y,
+        targetId: target?.id || null,
+        targetX: target?.x ?? null,
+        targetY: target?.y ?? null,
+    };
+    callbacks.onShot?.(shotEvent);
 
     const strategy = STRATEGIES[t.type];
-    if (strategy) strategy(state, callbacks, t, target, dmg, acc);
+    if (strategy) strategy(state, callbacks, t, target, dmg, acc, shotEvent);
 }

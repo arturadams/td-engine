@@ -52,3 +52,18 @@ The `createCanvasRenderer` helper accepts optional flags:
 - `showBuildMask` – hatch non-buildable cells (default `true`)
 - `cacheMap` – cache static map layers to an offscreen canvas for faster
   rendering (default `true`)
+
+## Hook payloads
+
+Subscribe to gameplay events with `engine.hook(name, handler)`. Notable
+combat-related hooks expose positional data so listeners can trigger
+visuals without inspecting engine state:
+
+- `shot` – fired whenever a tower shoots. Payload: `{ towerId, towerX,
+  towerY, targetId, targetX, targetY }`.
+- `hit` – dispatched for each confirmed hit (including chain and pierce
+  bounces). Payload: `{ towerId, towerX, towerY, targetId, targetType,
+  hitX, hitY }`.
+- `creepDamage` – emitted on damage application. Payload: `{ creepId,
+  creepType, targetId, targetType, amount, elt, towerId, towerX, towerY,
+  hitX, hitY, targetX, targetY }`.

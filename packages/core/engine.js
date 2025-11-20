@@ -15,6 +15,44 @@ import { resolveConfig } from './config.js';
 import { isBlocked as isBlockedImpl, canPlace as canPlaceImpl, placeTower as placeTowerImpl, sellTower as sellTowerImpl, setBuild as setBuildImpl, setHover as setHoverImpl, selectTowerAt as selectTowerAtImpl, gatherNeighbors, neighborsSynergy } from './engine/placement.js';
 import { changeGold, changeLife } from './engine/economy.js';
 import { levelUpSelected as levelUpSelectedImpl, applyEvolution as applyEvolutionImpl, setTargeting as setTargetingImpl } from './engine/upgrades.js';
+
+/**
+ * @typedef {Object} ShotEvent
+ * @property {string|null} towerId
+ * @property {number|null} towerX
+ * @property {number|null} towerY
+ * @property {string|null} targetId
+ * @property {number|null} targetX
+ * @property {number|null} targetY
+ */
+
+/**
+ * @typedef {Object} HitEvent
+ * @property {string|null} towerId
+ * @property {number|null} towerX
+ * @property {number|null} towerY
+ * @property {string|null} targetId
+ * @property {string|null} targetType
+ * @property {number|null} hitX
+ * @property {number|null} hitY
+ */
+
+/**
+ * @typedef {Object} CreepDamageEvent
+ * @property {string} creepId
+ * @property {string} creepType
+ * @property {string} targetId
+ * @property {string} targetType
+ * @property {number} amount
+ * @property {string} elt
+ * @property {string|null} towerId
+ * @property {number|null} towerX
+ * @property {number|null} towerY
+ * @property {number} hitX
+ * @property {number} hitY
+ * @property {number} targetX
+ * @property {number} targetY
+ */
 import { step as stepImpl } from './engine/step.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -299,11 +337,47 @@ export function createEngine(seedState, userConfig) {
     function onCreepSpawn(c) { fire('creepSpawn', { creepId: c.id, type: c.type }); }
     function onCreepKill(c) { fire('creepKill', { creepId: c.id, type: c.type, gold: c.gold }); }
     function onCreepLeak(c) { fire('creepLeak', { creepId: c.id, type: c.type }); }
-    function onCreepDamage({ creep, amount, elt, towerId }) {
-        fire('creepDamage', { creepId: creep.id, creepType: creep.type, amount, elt, towerId });
+    function onCreepDamage({ creep, amount, elt, towerId, hitX, hitY, targetX, targetY }) {
+        const tower = towerId ? state.towers.find(t => t.id === towerId) : null;
+        fire('creepDamage', {
+            creepId: creep.id,
+            creepType: creep.type,
+            targetId: creep.id,
+            targetType: creep.type,
+            amount,
+            elt,
+            towerId,
+            towerX: tower?.x ?? null,
+            towerY: tower?.y ?? null,
+            hitX: hitX ?? targetX ?? creep.x,
+            hitY: hitY ?? targetY ?? creep.y,
+            targetX: targetX ?? creep.x,
+            targetY: targetY ?? creep.y,
+        });
     }
-    function onShot(towerId) { fire('shot', { towerId }); }
-    function onHit(towerId) { fire('hit', { towerId }); }
+    function onShot(evt) {
+        const tower = evt?.towerId ? state.towers.find(t => t.id === evt.towerId) : null;
+        fire('shot', {
+            towerId: evt?.towerId ?? null,
+            towerX: evt?.towerX ?? tower?.x ?? null,
+            towerY: evt?.towerY ?? tower?.y ?? null,
+            targetId: evt?.targetId ?? null,
+            targetX: evt?.targetX ?? null,
+            targetY: evt?.targetY ?? null,
+        });
+    }
+    function onHit(evt) {
+        const tower = evt?.towerId ? state.towers.find(t => t.id === evt.towerId) : null;
+        fire('hit', {
+            towerId: evt?.towerId ?? null,
+            towerX: evt?.towerX ?? tower?.x ?? null,
+            towerY: evt?.towerY ?? tower?.y ?? null,
+            targetId: evt?.targetId ?? null,
+            targetType: evt?.targetType ?? null,
+            hitX: evt?.hitX ?? null,
+            hitY: evt?.hitY ?? null,
+        });
+    }
 
     function reset(seed) {
         waves.resetSpawner();
