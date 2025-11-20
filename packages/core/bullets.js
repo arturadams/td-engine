@@ -3,6 +3,7 @@ import { takeDamage, applyStatus } from './combat.js';
 import { acquireParticle } from './particles.js';
 import { getEffect } from './effects/index.js';
 import { queryCreeps } from './spatial.js';
+import { arcHeight, clamp01 } from './arc.js';
 
 const pool = [];
 
@@ -80,9 +81,16 @@ export function updateBullets(state, { onCreepDamage }) {
         const b = state.bullets[i];
         const effect = b.effect;
         effect.trail(state, b);
+        if (b.flightTime == null) b.flightTime = b.arc?.flightTime ?? b.ttl ?? 0;
+        if (b.baseZ == null) b.baseZ = b.z ?? 0;
         b.ttl -= state.dt;
         b.x += b.vx * state.dt;
         b.y += b.vy * state.dt;
+        const total = b.arc?.flightTime ?? b.flightTime ?? 0;
+        const progress = total > 0 ? clamp01(1 - b.ttl / total) : 1;
+        b.arcProgress = progress;
+        const arcZ = b.arc ? arcHeight(b.arc.apex ?? 0, progress) : 0;
+        b.z = (b.baseZ ?? 0) + arcZ;
 
         if (b.ttl <= 0) {
             if (b.kind === 'splash') {

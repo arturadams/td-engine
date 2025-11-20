@@ -115,5 +115,34 @@ describe('bullets via engine.step', () => {
     expect(onDamage.mock.calls.map(c => c[0].amount)).toEqual([10, 7]);
     expect(engine.state.bullets.length).toBe(0);
   });
+
+  it('tracks arc progress and height for arcing bullets', () => {
+    const engine = createEngine();
+    const b = {
+      kind: 'splash',
+      x: 0,
+      y: 0,
+      z: 3,
+      baseZ: 3,
+      vx: 0,
+      vy: 0,
+      ttl: 1,
+      flightTime: 1,
+      arc: { apex: 12, flightTime: 1 },
+      aoe: 0,
+      dmg: 0,
+      elt: 'FIRE',
+      status: null,
+      mod: {},
+      fromId: 't1',
+      effect: getEffect('FIRE'),
+    };
+    engine.state.bullets.push(b);
+    engine.step(0.25);
+    expect(b.arcProgress).toBeCloseTo(0.25, 2);
+    const expectedZ = 3 + 4 * 12 * 0.25 * 0.75;
+    expect(b.z).toBeCloseTo(expectedZ, 2);
+    expect(engine.state.bullets.length).toBe(1);
+  });
 });
 

@@ -80,4 +80,23 @@ describe('creeps', () => {
     advanceCreep(state, creep, () => {});
     expect(creep.x).toBeCloseTo(startPx.x + 0.5, 1);
   });
+
+  it('updates arc progress and z height when configured', () => {
+    const map = createDefaultMap();
+    const state = { map, creeps: [], dt: 1, path: [], pathGrid: null };
+    recomputePathingForAll(state, () => false);
+    const startPx = cellCenterForMap(map, map.start.x, map.start.y);
+    const endPx = cellCenterForMap(map, map.end.x, map.end.y);
+    const creep = {
+      id: 'c', type: 'Grunt', x: startPx.x, y: startPx.y, seg: 0, t: 0,
+      path: [startPx, endPx], speed: 10,
+      status: {},
+      hp: 5, maxhp: 5, resist: {}, gold: 1, alive: true,
+      arc: { apex: 8, flightTime: 2 }, arcTimer: 0, baseZ: 2, z: 2,
+    };
+    state.creeps.push(creep);
+    advanceCreep(state, creep, () => {});
+    expect(creep.arcProgress).toBeCloseTo(0.5, 2);
+    expect(creep.z).toBeCloseTo(2 + 4 * 8 * 0.5 * 0.5, 2);
+  });
 });
