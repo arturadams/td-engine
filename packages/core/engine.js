@@ -85,10 +85,22 @@ export function createEngine(seedState, userConfig) {
     const canPlace = (gx, gy) => canPlaceImpl(state, towerGrid, canBuildCell, gx, gy);
     const neighborsSynergyBound = (targets) => neighborsSynergy(state, towerGrid, targets);
 
+    const shouldUseFlowField = () => {
+        const cfg = engine.config.pathfinding || {};
+        const area = state.map.size.cols * state.map.size.rows;
+        const threshold = cfg.flowFieldMinArea ?? 0;
+        return cfg.useFlowField !== false && area >= threshold;
+    };
+
+    const recomputePathing = () => {
+        const useFlowField = shouldUseFlowField();
+        recomputePathingForAll(state, isBlocked, { useFlowField, useAstar: !useFlowField });
+    };
+
     function placeTower(gx, gy, rawElt) {
         return placeTowerImpl(state, towerGrid, canBuildCell, gx, gy, rawElt, {
             onGoldChange,
-            recomputePathingForAll,
+            recomputePathingForAll: recomputePathing,
             gatherNeighborsFn: gatherNeighbors,
             neighborsSynergyFn: neighborsSynergy,
             onTowerPlace,
@@ -98,7 +110,7 @@ export function createEngine(seedState, userConfig) {
     function sellTower(id) {
         return sellTowerImpl(state, towerGrid, id, {
             onGoldChange,
-            recomputePathingForAll,
+            recomputePathingForAll: recomputePathing,
             gatherNeighborsFn: gatherNeighbors,
             neighborsSynergyFn: neighborsSynergy,
             onTowerSell,
@@ -213,7 +225,7 @@ export function createEngine(seedState, userConfig) {
         state.hover = { gx: -1, gy: -1, valid: false };
 
         rebuildTowerGrid();
-        recomputePathingForAll(state, isBlocked);
+        recomputePathing();
         onMapChange(getMapInfo());
         return true;
     }
@@ -388,7 +400,7 @@ export function createEngine(seedState, userConfig) {
         resetState(state, { autoWaveEnabled: state.autoWaveEnabled, autoWaveDelay: state.autoWaveDelay, seed: state.seed, ...seed });
         clearParticlePool();
         rebuildTowerGrid();
-        recomputePathingForAll(state, isBlocked);
+        recomputePathing();
         neighborsSynergyBound();
         onGameReset();
         onGoldChange(0);
@@ -421,7 +433,7 @@ export function createEngine(seedState, userConfig) {
     }
 
     // initial path
-    recomputePathingForAll(state, isBlocked);
+    recomputePathing();
 
     engine.stats = attachStats(engine);
     engine.hook = hook;

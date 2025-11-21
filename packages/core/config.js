@@ -10,6 +10,7 @@ export const defaultConfig = {
   speeds: { creep: 1, tower: 1 },
   fixedStep: 1 / 60,
   maxSubSteps: 240,
+  pathfinding: { useFlowField: true, flowFieldMinArea: 256 },
 };
 
 export function resolveConfig(user = {}) {
@@ -17,6 +18,7 @@ export function resolveConfig(user = {}) {
     ...defaultConfig,
     ...user,
     speeds: { ...defaultConfig.speeds, ...(user.speeds || {}) },
+    pathfinding: { ...defaultConfig.pathfinding, ...(user.pathfinding || {}) },
   };
 
   if (!RENDER_BACKENDS.includes(cfg.renderer)) {

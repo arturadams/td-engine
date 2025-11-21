@@ -5,88 +5,45 @@ import { cellCenterForMap } from './map.js';
 import { tickStatusesAndCombos } from './combat.js';
 import { getDeathFx } from './deaths/index.js';
 import { arcHeight, clamp01 } from './arc.js';
+import { TILE } from './content.js';
+import { buildFlowField, reconstructPath, astar, buildDistanceGrid } from './pathfinding.js';
 
-export function recomputePathingForAll(state, isBlocked) {
+export function recomputePathingForAll(state, isBlocked, opts = {}) {
   const { start, end, size } = state.map;
-  const { dist, prev } = buildPredecessorGrid(end, isBlocked, size.cols, size.rows);
-  const mainPathCells = reconstructPath(start, dist, prev, size);
+  const { useFlowField = true, useAstar = !useFlowField } = opts;
+
+  const distData = useFlowField ? buildFlowField(end, isBlocked, size.cols, size.rows) : buildDistanceGrid(end, isBlocked, size.cols, size.rows);
+  const { dist, prev } = distData;
+  const flow = useFlowField ? distData.flow : null;
+
+  const astarPathCells = useAstar ? astar(start, end, isBlocked, size.cols, size.rows) : null;
+  const mainPathCells = astarPathCells || reconstructPath(start, dist, prev, size);
   const newPath = mainPathCells ? mainPathCells.map(n => cellCenterForMap(state.map, n.x, n.y)) : [];
 
-  // always update pathGrid
-  state.pathGrid = { dist, prev };
+  state.pathGrid = { dist, prev, flow, mode: useFlowField ? 'flow' : 'astar' };
+  state.pathMode = state.pathGrid.mode;
 
   const oldPath = state.path || [];
   const same =
     oldPath.length === newPath.length &&
     oldPath.every((p, i) => p.x === newPath[i].x && p.y === newPath[i].y);
 
-  if (same) return;
-
-  state.path = newPath;
+  if (!same) {
+    state.path = newPath;
+  }
 
   for (const c of state.creeps) {
     const startCell = toCell(state, c.x, c.y);
-    const npcCells = reconstructPath({ x: startCell.gx, y: startCell.gy }, dist, prev, size);
+    const npcCells = useAstar
+      ? astar({ x: startCell.gx, y: startCell.gy }, end, isBlocked, size.cols, size.rows)
+      : reconstructPath({ x: startCell.gx, y: startCell.gy }, dist, prev, size);
     if (npcCells) {
       const path = npcCells.map(n => cellCenterForMap(state.map, n.x, n.y));
       path[0] = { x: c.x, y: c.y };
       c.path = path;
-      c.seg = 0; c.t = 0;
-      c._seg = -1;
     }
+    c.seg = 0; c.t = 0; c._seg = -1; c._flowTarget = null;
   }
-}
-
-function buildPredecessorGrid(end, isBlocked, cols, rows) {
-  const dist = Array.from({ length: rows }, () => Array(cols).fill(Infinity));
-  const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
-  const q = [{ x: end.x, y: end.y }];
-  let head = 0;
-  dist[end.y][end.x] = 0;
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  while (head < q.length) {
-    const cur = q[head++];
-    const d = dist[cur.y][cur.x] + 1;
-    for (const [dx,dy] of dirs) {
-      const nx = cur.x + dx, ny = cur.y + dy;
-      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-      if (isBlocked(nx, ny)) continue;
-      if (dist[ny][nx] !== Infinity) continue;
-      dist[ny][nx] = d;
-      prev[ny][nx] = cur;
-      q.push({ x: nx, y: ny });
-    }
-  }
-  return { dist, prev };
-}
-
-function reconstructPath(start, dist, prev, size) {
-  const { cols, rows } = size;
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  let x = start.x, y = start.y;
-  const path = [{ x, y }];
-
-  if (x < 0 || y < 0 || x >= cols || y >= rows) return null;
-
-  if (dist[y][x] === Infinity) {
-    let best = null, bestD = Infinity;
-    for (const [dx, dy] of dirs) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-      if (dist[ny][nx] < bestD) { bestD = dist[ny][nx]; best = { x: nx, y: ny }; }
-    }
-    if (!best || bestD === Infinity) return null;
-    x = best.x; y = best.y;
-    path.push({ x, y });
-  }
-
-  while (prev[y][x]) {
-    const p = prev[y][x];
-    x = p.x; y = p.y;
-    path.push({ x, y });
-  }
-
-  return path;
 }
 
 export function advanceCreep(state, c, onLeak) {
@@ -99,18 +56,55 @@ export function advanceCreep(state, c, onLeak) {
   let slowMul = 1; if (c.status.CHILL) slowMul = 1 - c.status.CHILL.slow;
 
   const speed = c.speed * slowMul;
-  let A = c.path[c.seg], B = c.path[c.seg + 1];
-  if (!B) { c.alive = false; onLeak(); return; }
+  const usedFlow = state.pathMode === 'flow' && state.pathGrid?.flow;
+  if (usedFlow) {
+    moveUsingFlowField(state, c, onLeak, speed);
+  } else {
+    moveAlongPath(state, c, onLeak, speed);
+  }
+
+  updateCreepArc(state, c);
+}
+
+function moveUsingFlowField(state, c, onLeak, speed) {
+  const flowGrid = state.pathGrid?.flow;
+  if (!flowGrid) { moveAlongPath(state, c, onLeak, speed); return; }
+
+  const { gx, gy } = toCell(state, c.x, c.y);
+  if (gx === state.map.end.x && gy === state.map.end.y) { c.alive = false; onLeak(); return; }
+
+  const dir = flowGrid[gy]?.[gx];
+  if (!dir || !dir.next) { moveAlongPath(state, c, onLeak, speed); return; }
+  const target = cellCenterForMap(state.map, dir.next.x, dir.next.y);
+
+  if (!c._flowTarget || c._flowTarget.x !== dir.next.x || c._flowTarget.y !== dir.next.y) {
+    const vx = target.x - c.x, vy = target.y - c.y;
+    const d = Math.hypot(vx, vy) || 1;
+    c._dirx = vx / d; c._diry = vy / d; c._len = d; c._seg = c.seg; c._flowTarget = dir.next;
+  }
+
+  c.x += c._dirx * speed * state.dt; c.y += c._diry * speed * state.dt; c.t += speed * state.dt;
+  if (c.t >= c._len) {
+    c.seg++; c.t = 0; c.x = target.x; c.y = target.y; c._flowTarget = null; c._seg = c.seg - 1;
+    if (dir.next.x === state.map.end.x && dir.next.y === state.map.end.y) { c.alive = false; onLeak(); }
+  }
+}
+
+function moveAlongPath(state, c, onLeak, speed) {
+  const path = c.path || [];
+  let A = path[c.seg], B = path[c.seg + 1];
+  if (!A || !B) { c.alive = false; onLeak(); return; }
 
   if (c._seg !== c.seg) {
     const vx = B.x - A.x, vy = B.y - A.y;
-    const d = Math.sqrt(vx * vx + vy * vy);
+    const d = Math.sqrt(vx * vx + vy * vy) || 1;
     c._dirx = vx / d; c._diry = vy / d; c._len = d; c._seg = c.seg;
   }
   c.x += c._dirx * speed * state.dt; c.y += c._diry * speed * state.dt; c.t += speed * state.dt;
-  if (c.t >= c._len) { c.seg++; c.t = 0; c.x = c.path[c.seg].x; c.y = c.path[c.seg].y; c._seg = c.seg - 1; }
-
-  updateCreepArc(state, c);
+  if (c.t >= c._len) {
+    c.seg++; c.t = 0; c.x = path[c.seg].x; c.y = path[c.seg].y; c._seg = c.seg - 1;
+    if (c.seg >= path.length - 1) { c.alive = false; onLeak(); }
+  }
 }
 
 export function cullDead(state, { onKill }) {
@@ -131,7 +125,6 @@ export function cullDead(state, { onKill }) {
 // helpers
 function toCell(state, x, y) {
   const { cols, rows } = state.map.size;
-  const TILE = 32;
   const gx = Math.max(0, Math.min(cols - 1, Math.floor(x / TILE)));
   const gy = Math.max(0, Math.min(rows - 1, Math.floor(y / TILE)));
   return { gx, gy };
